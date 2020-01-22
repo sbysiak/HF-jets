@@ -9,7 +9,8 @@ void runAnalysis()
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
     Bool_t local = kTRUE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kFALSE;
+    Bool_t gridTest = kTRUE;
+
 
     // since we will compile a class, tell root where to look for headers
 #if !defined (__CINT__) || defined (__CLING__)
@@ -96,12 +97,6 @@ void runAnalysis()
         // add a few files to the chain (change this so that your local files are added)
         //chain->Add("AliAOD.root");
         chain->Add("sim/2016/LHC16h3/17/244540/AOD/AliAOD.root");
-        // chain->Add("data/__alice__sim__2016__LHC16h3__10__244480__AOD__088__AliAOD.root");
-        // chain->Add("data_660/__alice__sim__2017__LHC17f8f__20__257630__001__AliAOD.root");
-        // chain->Add("data/__alice__data__2017__LHC17p__10__000282341__pass1_FAST__AOD208__0001__AliAOD.root");
-        // chain->Add("data/__alice__data__2017__LHC17p__000282341__pass1_FAST__AOD208__AliAOD_2/0002/AliAOD.root");
-        // chain->Add("data/__alice__data__2017__LHC17q__000282366__pass1_FAST__AOD208__AliAOD_2/0001/AliAOD.root");
-        // chain->Add("data/__alice__data__2017__LHC17q__000282366__pass1_FAST__AOD208__AliAOD_2/0002/AliAOD.root");
 
         // start the analysis locally, reading the events from the tchain
         mgr->StartAnalysis("local", chain);
@@ -115,23 +110,19 @@ void runAnalysis()
         // alienHandler->SetAnalysisSource("AliAnalysisTaskMyTask.cxx");
         // select the aliphysics version. all other packages
         // are LOADED AUTOMATICALLY!
-        //alienHandler->SetAliPhysicsVersion("vAN-20181028_ROOT6-1");
         alienHandler->SetAliPhysicsVersion("vAN-20191002_ROOT6-1");
 
         // set the Alien API version
         alienHandler->SetAPIVersion("V1.1x");
-        // select the input data
-/*
-        alienHandler->SetGridDataDir("/alice/data/2017/LHC17p");
-        alienHandler->SetDataPattern("*pass1_FAST/AOD208/0001/AliAOD.root");
-        // MC has no prefix, data has prefix 000
-        alienHandler->SetRunPrefix("000");
-        // runnumber
-        alienHandler->AddRunNumber(282341);
-*/
 
+
+        // define the output folders
+        alienHandler->SetGridWorkingDir("myWorkingDir_LHC16h3/ptbin10"); // ### !!!
+        alienHandler->SetGridOutputDir("myOutputDir");
+
+        // select the input data
         // path = /alice/sim/2016/LHC16h3/10/244480/AOD/088/AliAOD.root
-        alienHandler->SetGridDataDir("/alice/sim/2016/LHC16h3/17/");
+        alienHandler->SetGridDataDir("/alice/sim/2016/LHC16h3/10/");
         alienHandler->SetDataPattern("*AOD/*AliAOD.root");
         // MC has no prefix, data has prefix 000
         alienHandler->SetRunPrefix("");
@@ -180,11 +171,7 @@ void runAnalysis()
         // (see below) mode, set SetMergeViaJDL(kFALSE)
         // to collect final results
         alienHandler->SetMaxMergeStages(3);
-        alienHandler->SetMergeViaJDL(kFALSE);  // ### !!!
-
-        // define the output folders
-        alienHandler->SetGridWorkingDir("myWorkingDir_LHC16h3/ptbin17");
-        alienHandler->SetGridOutputDir("myOutputDir");
+        alienHandler->SetMergeViaJDL(kFALSE);  // ### !!! first kFALSE, then kTRUE for 2nd step of merging
 
         // connect the alien plugin to the manager
         mgr->SetGridHandler(alienHandler);
@@ -196,7 +183,7 @@ void runAnalysis()
             mgr->StartAnalysis("grid");
         } else {
             // else launch the full grid analysis
-            alienHandler->SetRunMode("terminate");  // ### !!!
+            alienHandler->SetRunMode("full");  // ### !!! "full", then "terminate" for 1st step of merging
             mgr->StartAnalysis("grid");
         }
     }

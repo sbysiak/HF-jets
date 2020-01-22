@@ -1,0 +1,12 @@
+*.root
+*.log
+
+ARCHIVE/*
+
+# files created automatically when in grid mode
+myAnalysis.C
+myTask.sh
+myTask_validation.sh
+stderr
+stdout
+wn.xml
