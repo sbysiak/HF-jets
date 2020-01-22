@@ -7,7 +7,7 @@
 void runAnalysis()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
-    Bool_t local = kFALSE;
+    Bool_t local = kTRUE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
     Bool_t gridTest = kFALSE;
 
@@ -33,44 +33,27 @@ void runAnalysis()
     // from root6, or the interpreter of root5
 #if !defined (__CINT__) || defined (__CLING__)
     gInterpreter->LoadMacro("AliAnalysisTaskJetExtractor.cxx++g");
-    // AliAnalysisTaskJetExtractor *task = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C"));
 
-    //                            /***** DATA *****/
-/*    TMacro physicsSelection_Add(gSystem->ExpandPathName("$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C"));
-    AliPhysicsSelectionTask* physicsSelectionTask = reinterpret_cast<AliPhysicsSelectionTask*>(physicsSelection_Add.Exec("kFALSE, kTRUE"));
+    AliPhysicsSelectionTask* physicsSelectionTask = reinterpret_cast<AliPhysicsSelectionTask*>(gInterpreter->ExecuteMacro("$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C(kTRUE, kTRUE)"));
+    AliEmcalJetTask* emcalJetTask                 = reinterpret_cast<AliEmcalJetTask*>(        gInterpreter->ExecuteMacro("$ALICE_PHYSICS/PWGJE/EMCALJetTasks/macros/AddTaskEmcalJet.C(\"\", \"\", AliJetContainer::antikt_algorithm, 0.4, AliJetContainer::kChargedJet, 0.15, 0.3, 0.005, AliJetContainer::E_scheme, \"Jet\", 0., kTRUE, kFALSE)"));
 
-    TMacro JetExtractor_R04_JF_Add(gSystem->ExpandPathName("$ALICE_PHYSICS/PWGJE/EMCALJetTasks/macros/AddTaskEmcalJet.C"));
-    AliEmcalJetTask* JetExtractor_R04_JF_Task = reinterpret_cast<AliEmcalJetTask*>(JetExtractor_R04_JF_Add.Exec("\"\", \"\", AliJetContainer::antikt_algorithm, 0.4, AliJetContainer::kChargedJet, 0.15, 0.3, 0.005, AliJetContainer::E_scheme, \"Jet\", 0., kTRUE, kFALSE"));
+    emcalJetTask->SetNeedEmcalGeom(kFALSE);
+    emcalJetTask->SelectCollisionCandidates(AliVEvent::kINT7);
 
-    JetExtractor_R04_JF_Task->SetNeedEmcalGeom(kFALSE);
-    JetExtractor_R04_JF_Task->SelectCollisionCandidates(AliVEvent::kINT7);
     AliTrackContainer* trackCont = new AliTrackContainer("tracks");
     trackCont->SetFilterHybridTracks(kTRUE);
     trackCont->SetParticlePtCut(0.15);
-    JetExtractor_R04_JF_Task->AdoptParticleContainer(trackCont);
+    trackCont->SetTrackFilterType(AliEmcalTrackSelection::kCustomTrackFilter);
+    trackCont->SetAODFilterBits((1<<4)|(1<<9));
+    emcalJetTask->AdoptParticleContainer(trackCont);
 
-    AliAnalysisTaskJetExtractor *task = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"allJets\")"));
-    AliAnalysisTaskJetExtractor *task2 = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"allJets\")"));
-*/
+    // DATA
+    // AliAnalysisTaskJetExtractor *task = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"allJets\")"));
 
-
-//                            /***** MC *****/
-    TMacro JetExtractor_JF_PYTHIA_DetLevel_Add(gSystem->ExpandPathName("$ALICE_PHYSICS/PWGJE/EMCALJetTasks/macros/AddTaskEmcalJet.C"));
-    AliEmcalJetTask* JetExtractor_JF_PYTHIA_DetLevel_Task = reinterpret_cast<AliEmcalJetTask*>(JetExtractor_JF_PYTHIA_DetLevel_Add.Exec("\"\", \"\", AliJetContainer::antikt_algorithm, 0.4, AliJetContainer::kChargedJet, 0.15, 0.3, 0.005, AliJetContainer::E_scheme, \"JetPY\", 0., kTRUE, kFALSE"));
-
-    JetExtractor_JF_PYTHIA_DetLevel_Task->SetNeedEmcalGeom(kFALSE);
-    // JetExtractor_JF_PYTHIA_DetLevel_Task->SelectCollisionCandidates(AliVEvent::kINT7);
-    AliTrackContainer* trackCont = new AliTrackContainer("tracks");
-    trackCont->SetFilterHybridTracks(kTRUE);
-    trackCont->SetParticlePtCut(0.15);
-    JetExtractor_JF_PYTHIA_DetLevel_Task->AdoptParticleContainer(trackCont);
-    JetExtractor_JF_PYTHIA_DetLevel_Task->GetTrackContainer(0)->SetTrackFilterType(AliEmcalTrackSelection::kCustomTrackFilter);
-    JetExtractor_JF_PYTHIA_DetLevel_Task->GetTrackContainer(0)->SetAODFilterBits((1<<4)|(1<<9));
-
-    AliAnalysisTaskJetExtractor *task_b     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"JetPY_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"bJets\")"));
-    AliAnalysisTaskJetExtractor *task_c     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"JetPY_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"cJets\")"));
-    AliAnalysisTaskJetExtractor *task_light = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"JetPY_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"udsgJets\")"));
-
+    // MC
+    AliAnalysisTaskJetExtractor *task_b     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"bJets\")"));
+    AliAnalysisTaskJetExtractor *task_c     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"cJets\")"));
+    AliAnalysisTaskJetExtractor *task_light = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"udsgJets\")"));
 
 
 #else
@@ -111,9 +94,10 @@ void runAnalysis()
         // if you want to run locally, we need to define some input
         TChain* chain = new TChain("aodTree");
         // add a few files to the chain (change this so that your local files are added)
-        // chain->Add("AliAOD.root");
+        //chain->Add("AliAOD.root");
+        chain->Add("sim/2016/LHC16h3/17/244540/AOD/AliAOD.root");
         // chain->Add("data/__alice__sim__2016__LHC16h3__10__244480__AOD__088__AliAOD.root");
-        chain->Add("data_660/__alice__sim__2017__LHC17f8f__20__257630__001__AliAOD.root");
+        // chain->Add("data_660/__alice__sim__2017__LHC17f8f__20__257630__001__AliAOD.root");
         // chain->Add("data/__alice__data__2017__LHC17p__10__000282341__pass1_FAST__AOD208__0001__AliAOD.root");
         // chain->Add("data/__alice__data__2017__LHC17p__000282341__pass1_FAST__AOD208__AliAOD_2/0002/AliAOD.root");
         // chain->Add("data/__alice__data__2017__LHC17q__000282366__pass1_FAST__AOD208__AliAOD_2/0001/AliAOD.root");
