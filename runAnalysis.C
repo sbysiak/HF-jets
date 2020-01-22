@@ -11,6 +11,7 @@ void runAnalysis()
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
     Bool_t gridTest = kTRUE;
 
+    Bool_t isMC = kTRUE;
 
     // since we will compile a class, tell root where to look for headers
 #if !defined (__CINT__) || defined (__CLING__)
@@ -48,13 +49,14 @@ void runAnalysis()
     trackCont->SetAODFilterBits((1<<4)|(1<<9));
     emcalJetTask->AdoptParticleContainer(trackCont);
 
-    // DATA
-    // AliAnalysisTaskJetExtractor *task = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"allJets\")"));
-
-    // MC
-    AliAnalysisTaskJetExtractor *task_b     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"bJets\")"));
-    AliAnalysisTaskJetExtractor *task_c     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"cJets\")"));
-    AliAnalysisTaskJetExtractor *task_light = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"udsgJets\")"));
+    if (isMC){
+        AliAnalysisTaskJetExtractor *task_b     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"bJets\")"));
+        AliAnalysisTaskJetExtractor *task_c     = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"cJets\")"));
+        AliAnalysisTaskJetExtractor *task_light = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"udsgJets\")"));
+    }
+    else{
+        AliAnalysisTaskJetExtractor *task = reinterpret_cast<AliAnalysisTaskJetExtractor*>(gInterpreter->ExecuteMacro("AddTaskJetExtractor.C(\"tracks\", \"\", \"Jet_AKTChargedR040_tracks_pT0150_E_scheme\", \"\", 0.4, \"allJets\")"));
+    }
 
 
 #else
@@ -115,18 +117,24 @@ void runAnalysis()
         // set the Alien API version
         alienHandler->SetAPIVersion("V1.1x");
 
-
         // define the output folders
         alienHandler->SetGridWorkingDir("myWorkingDir_LHC16h3/ptbin10"); // ### !!!
         alienHandler->SetGridOutputDir("myOutputDir");
 
         // select the input data
-        // path = /alice/sim/2016/LHC16h3/10/244480/AOD/088/AliAOD.root
-        alienHandler->SetGridDataDir("/alice/sim/2016/LHC16h3/10/");
-        alienHandler->SetDataPattern("*AOD/*AliAOD.root");
-        // MC has no prefix, data has prefix 000
-        alienHandler->SetRunPrefix("");
-        // runnumber
+        if(isMC){
+            // path = /alice/sim/2016/LHC16h3/10/244480/AOD/088/AliAOD.root
+            alienHandler->SetGridDataDir("/alice/sim/2016/LHC16h3/10/");
+            alienHandler->SetDataPattern("*AOD/*AliAOD.root");
+            alienHandler->SetRunPrefix("");  // MC has no prefix, data has prefix 000
+        }
+        else{
+            // path = /alice/data/2015/LHC15n/000244453/pass4/AOD208/0090/AliAOD.root
+            alienHandler->SetGridDataDir("/alice/data/2015/LHC15n/");
+            alienHandler->SetDataPattern("*pass4/AOD208*AliAOD.root");
+            alienHandler->SetRunPrefix("000");  // MC has no prefix, data has prefix 000
+        }
+        // runnumbers
         // based on pass3 !!!
         alienHandler->AddRunNumber(244628);
         alienHandler->AddRunNumber(244627);
@@ -163,7 +171,6 @@ void runAnalysis()
 
         alienHandler->SetOutputToRunNo(kTRUE);
         alienHandler->SetKeepLogs(kTRUE);
-
 
         alienHandler->SetCheckCopy(kFALSE); // ### !!!
         // merging: run with kTRUE to merge on grid
