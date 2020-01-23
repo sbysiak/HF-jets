@@ -1,12 +1,19 @@
 *.root
 *.log
+*.xml
 
 ARCHIVE/*
 
 # files created automatically when in grid mode
 myAnalysis.C
 myTask.sh
+myTask.jdl
 myTask_validation.sh
+myTask_merge.C
+myTask_merge.jdl
+myTask_merge.sh
+myTask_merge_final.jdl
+myTask_validation_merge.sh
 stderr
 stdout
 wn.xml

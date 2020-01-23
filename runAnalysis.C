@@ -36,7 +36,9 @@ void runAnalysis()
 #if !defined (__CINT__) || defined (__CLING__)
     gInterpreter->LoadMacro("AliAnalysisTaskJetExtractor.cxx++g");
 
-    AliPhysicsSelectionTask* physicsSelectionTask = reinterpret_cast<AliPhysicsSelectionTask*>(gInterpreter->ExecuteMacro("$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C(kTRUE, kTRUE)"));
+    if(isMC) AliPhysicsSelectionTask* physicsSelectionTask = reinterpret_cast<AliPhysicsSelectionTask*>(gInterpreter->ExecuteMacro("$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C(kTRUE, kTRUE)"));
+    else     AliPhysicsSelectionTask* physicsSelectionTask = reinterpret_cast<AliPhysicsSelectionTask*>(gInterpreter->ExecuteMacro("$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C(kFALSE, kTRUE)"));
+
     AliEmcalJetTask* emcalJetTask                 = reinterpret_cast<AliEmcalJetTask*>(        gInterpreter->ExecuteMacro("$ALICE_PHYSICS/PWGJE/EMCALJetTasks/macros/AddTaskEmcalJet.C(\"\", \"\", AliJetContainer::antikt_algorithm, 0.4, AliJetContainer::kChargedJet, 0.15, 0.3, 0.005, AliJetContainer::E_scheme, \"Jet\", 0., kTRUE, kFALSE)"));
 
     emcalJetTask->SetNeedEmcalGeom(kFALSE);
@@ -178,7 +180,7 @@ void runAnalysis()
         // (see below) mode, set SetMergeViaJDL(kFALSE)
         // to collect final results
         alienHandler->SetMaxMergeStages(3);
-        alienHandler->SetMergeViaJDL(kFALSE);  // ### !!! first kFALSE, then kTRUE for 2nd step of merging
+        alienHandler->SetMergeViaJDL(kTRUE);  // ### !!! first kTRUE, then kFALSE for the last step of merging
 
         // connect the alien plugin to the manager
         mgr->SetGridHandler(alienHandler);
@@ -190,7 +192,7 @@ void runAnalysis()
             mgr->StartAnalysis("grid");
         } else {
             // else launch the full grid analysis
-            alienHandler->SetRunMode("full");  // ### !!! "full", then "terminate" for 1st step of merging
+            alienHandler->SetRunMode("full");  // ### !!! "full", then "terminate" for first step(s) of merging
             mgr->StartAnalysis("grid");
         }
     }
