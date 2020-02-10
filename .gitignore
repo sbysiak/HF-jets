@@ -1,8 +1,17 @@
 *.root
 *.log
 *.xml
+*.png
+*.pdf
+*.svg
+
+*.csv
 
 ARCHIVE/*
+
+# SWAN
+.sys.v*
+.swanproject
 
 # files created automatically when in grid mode
 myAnalysis.C
