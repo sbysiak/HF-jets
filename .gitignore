@@ -9,18 +9,11 @@
 
 ARCHIVE/*
 
-# python
-*.pyc
-__pycache__/*
-
-# atom remote-sync
-.remote*.json
-
 # SWAN
 .sys.v*
 .swanproject
 
-# files created automatically by aliroot when in grid mode
+# files created automatically when in grid mode
 myAnalysis.C
 myTask.sh
 myTask.jdl
