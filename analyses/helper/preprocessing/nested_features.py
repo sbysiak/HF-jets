@@ -30,6 +30,8 @@ df.drop(['Index__Jet_Track__sortby__IPdAbs__desc', 'Jet_Track_Pt__sortby__IPdAbs
 ```
 """
 
+import numpy as np
+import pandas as pd
 
 
 def _form_index_name(sorted_object_kind, sortby, order):

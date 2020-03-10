@@ -73,7 +73,7 @@ def plot_tagging_eff(y_true, y_proba, label='', color='k', title='', ax=None):
     b_mistag_rate = fpr
     
     if not ax: fig,ax = plt.subplots(figsize=(7,5))
-    ax.plot(b_tag_eff, b_mistag_rate, lw=3, label=label, color=color)
+    ax.plot(b_tag_eff, b_mistag_rate, '.-', lw=1, label=label, color=color)
     ax.set_xlabel('$b$ tagging efficiency (TPR)', horizontalalignment='right', x=1)
     ax.set_ylabel('mistagging efficiency (FPR)', horizontalalignment='right', y=1)
     ax.semilogy()
@@ -180,5 +180,41 @@ def plot_score_vs_pt(clf, X_sample, y_sample, flavour_ptbin_sample, ptbins, scor
         plt.legend(ncol=2)        
     ax.set_xlabel('jet $p_{T}^{reco}$ [GeV/$c$]')
     ax.set_ylabel(score_label)
+    plt.tight_layout()
+    return ax
+
+
+
+def plot_xgb_learning_curve(eval_res, metric, labels=['train set', 'test set'], ax=None):
+    """ plots learning curve based on XGBoost during-training watchlist
+
+    Parameters
+    ----------
+    eval_res : dict
+        output of XGBClassifier.evals_result()
+    mteric : string
+        metric name to be plotted, must be contained in `eval_res[...]`
+    labels : list of strings
+        contains plot labels for consecutive arrays contained in eval_res,
+        default=['train set', 'test set']
+    ax : matplotlib.axes._subplots.AxesSubplot object or None
+        axes to plot on
+        default=None, meaning creating axes inside function
+
+    Returns
+    -------
+    ax
+    """
+    if not ax: 
+        fig,ax = plt.subplots(figsize=(6,4))
+    train_scores = eval_res['validation_0'][metric]
+    test_scores = eval_res['validation_1'][metric]
+    iters = np.arange(0, len(train_scores))
+    ax.plot(iters, train_scores, 'b.-', label=labels[0])
+    ax.plot(iters, test_scores, 'r.-', label=labels[1])
+    ax.set_xlabel('training iterations (#trees)')
+    ax.set_ylabel(metric)
+    plt.grid(linestyle='--')
+    plt.legend()
     plt.tight_layout()
     return ax
