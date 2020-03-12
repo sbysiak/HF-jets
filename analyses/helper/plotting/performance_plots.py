@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import accuracy_score as acc, f1_score, roc_curve, roc_auc_score, classification_report, confusion_matrix, auc
+from helper.utils import signal_significance
 
 def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
     """ plots ROC curve on given `ax`
@@ -69,12 +70,12 @@ def plot_tagging_eff(y_true, y_proba, label='', color='k', title='', ax=None):
     ax
     """
     fpr, tpr, _ = roc_curve(y_true, y_proba)
-    b_tag_eff = tpr
-    b_mistag_rate = fpr
+    signal_eff = tpr
+    bckg_mistag_rate = fpr
     
     if not ax: fig,ax = plt.subplots(figsize=(7,5))
-    ax.plot(b_tag_eff, b_mistag_rate, '.-', lw=1, label=label, color=color)
-    ax.set_xlabel('$b$ tagging efficiency (TPR)', horizontalalignment='right', x=1)
+    ax.plot(signal_eff, bckg_mistag_rate, '.-', lw=1, label=label, color=color)
+    ax.set_xlabel('signal tagging efficiency (TPR)', horizontalalignment='right', x=1)
     ax.set_ylabel('mistagging efficiency (FPR)', horizontalalignment='right', y=1)
     ax.semilogy()
     ax.grid('y')
@@ -217,4 +218,91 @@ def plot_xgb_learning_curve(eval_res, metric, labels=['train set', 'test set'], 
     plt.grid(linestyle='--')
     plt.legend()
     plt.tight_layout()
+    return ax
+
+
+
+def plot_score_distr(y_true, y_proba, mistag_thresholds=[1e-3, 1e-2, 1e-1], ax=None, **plot_kwargs):
+    """ plots distribution of scores for both classes with (optional) threshold lines
+
+    Parameters
+    ----------
+    y_true : 1D array
+        array of true labels
+    y_proba : 1D array
+        array of predicted probabilities (usually clf.predict_proba[:,1])
+    mistag_thresholds : list of numbers or None
+        mistagging rates (FPR) used to draw vertical threshold lines
+    ax : matplotlib.axes._subplots.AxesSubplot object or None
+        axes to plot on
+        default=None, meaning creating axes inside function
+    plot_kwargs : dict
+        passed to plt.hist() and plt.vlines()
+
+    Returns
+    -------
+    ax
+    """    
+    if not ax: 
+        fig,ax = plt.subplots(10,6)
+    bins = np.linspace(0,1,200)
+    ax.hist(y_proba[y_true==1], bins=bins, histtype='step', color='b', density=1, **plot_kwargs)
+    ax.hist(y_proba[y_true==0], bins=bins, histtype='step', color='r', density=1, **plot_kwargs)
+    ax.semilogy()
+    ax.set_xlim(0,1)
+    ax.set_ylabel('score probability')
+    plt.legend()
+
+    if mistag_thresholds:
+        ymin,ymax = ax.get_ylim()
+        fpr, tpr, thresholds = roc_curve(y_true, y_proba)
+        for mistag_thresh in mistag_thresholds:
+            for b_tag_eff, mistag_rate, thresh in zip(tpr, fpr, thresholds):
+                if mistag_rate > mistag_thresh:
+                    ax.vlines(thresh, ymin, ymax, alpha=0.5, **plot_kwargs)
+                    break
+    return ax
+   
+    
+    
+def plot_signal_significance(y_true, y_proba, sig2incl_ratio, norm=True, ax=None, **plot_kwargs): 
+    """ plots signal significance for assumed signal-to-inclusive ratio
+
+    Parameters
+    ----------
+    y_true : 1D array
+        array of true labels, 
+        passed to `signal_significance`
+    y_proba : 1D array
+        array of predicted probabilities (usually clf.predict_proba[:,1]),
+        passed to `signal_significance`
+    sig2incl_ratio : float (0-1)
+        assumed signal-to-inclusive ratio
+        passed to `signal_significance`
+    norm : bool
+        if the significance should be scaled so that its max = 1
+        default=True
+    ax : matplotlib.axes._subplots.AxesSubplot object or None
+        axes to plot on
+        default=None, meaning creating axes inside function
+    plot_kwargs : dict
+        passed to plt.plot()
+
+    Returns
+    -------
+    ax
+    """       
+    if not ax: 
+        fig,ax = plt.subplots(10,3)
+        
+    significances, thresholds = signal_significance(y_true, y_proba, sig2incl_ratio)
+    if norm: 
+        ax.plot(thresholds, significances/np.nanmax(significances), **plot_kwargs)
+    else: 
+        ax.plot(thresholds, significances, **plot_kwargs)
+    ax.set_ylabel('$\\frac{S}{\\sqrt{S+B}}$' + ' normalized' if norm else '')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0.8, 1)
+    plt.grid()
+    plt.legend()
     return ax
