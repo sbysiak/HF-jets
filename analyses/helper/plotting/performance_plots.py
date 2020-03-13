@@ -142,41 +142,60 @@ def plot_confusion_matrix(y_true, y_pred, classes,
 
 
 
-def plot_score_vs_pt(clf, X_sample, y_sample, flavour_ptbin_sample, ptbins, score=(roc_auc_score, 'ROC AUC'), label='', marker='o', color='b', ax=None):
-    """ 
-    may require rewriting as for now it is recomputing all predictions
+def plot_score_vs_pt(y_true, y_pred, y_proba, flavour_ptbin, ptbins, score=(roc_auc_score, 'ROC AUC'), 
+                     label='', marker='o', color='b', ax=None):
+    """ plots ROC curve in typical HEP form (mistag rate vs tagging eff)
+
+    Parameters
+    ----------
+    y_true : 1D array of int
+        array of true labels
+    y_pred : 1D array of int
+        array of predicted labels (usually clf.predict())
+    y_proba : 1D array of floats
+        array of predicted probabilities (usually clf.predict_proba[:,1])
+    flavour_ptbin : 1D array of strings
+        denotes flavour and ptbin of each sample
+        in form "Fx", where F is flavour, e.g. 'b' or 'udsg' and x is number denoting ptbin 
+    score : tuple of function and string
+        tuple of metric and its name
+    label, marker, color : strings or acceptable by matplotlib
+        arguments passed in proper places to matplotlib functions
+    ax : matplotlib.axes._subplots.AxesSubplot object or None
+        axes to plot on
+        default=None, meaning creating axes inside function
+
+    Returns
+    -------
+    ax
     """
     score_func, score_label = score
     scores = []
-    y_pred = clf.predict(X_sample)
-    y_proba = clf.predict_proba(X_sample)[:,1]
-    #print('y_proba = ', y_proba)
+
     n_ptbins = len(ptbins)-1
     for pt_i in range(1, n_ptbins+1):
-    #     ptbin = [k.replace('b', 'udsg'), k.replace('udsg', 'b')]
-        ptbin = ['udsg'+str(pt_i), 'b'+str(pt_i)]
-        X_bin_sample = X_sample[[fp in ptbin for fp in flavour_ptbin_sample], :]
-        y_bin_sample = y_sample[[fp in ptbin for fp in flavour_ptbin_sample]]
-        y_bin_sample_pred  = clf.predict(X_bin_sample)
-        y_bin_sample_proba = clf.predict_proba(X_bin_sample)[:,1]
+        unique_flavours = list(set([''.join([i for i in s if not i.isdigit()]) for s in flavour_ptbin.unique()]))
+        curr_flavour_ptbin = [flavour+str(pt_i) for flavour in unique_flavours]
+        bin_idx = [fp in curr_flavour_ptbin for fp in flavour_ptbin]
+        y_bin_true  = y_true[bin_idx]
+        y_bin_proba = y_proba[bin_idx]
+        y_bin_pred  = y_pred[bin_idx]
 
         try:
-            sc = score_func(y_bin_sample, y_bin_sample_proba)
-            score_all = score_func(y_sample, y_proba)
+            sc = score_func(y_bin_true, y_bin_proba)
+            score_all = score_func(y_true, y_proba)
         except:
-            sc = score_func(y_bin_sample, y_bin_sample_pred)
-            score_all = score_func(y_sample, y_pred)
-
+            sc = score_func(y_bin_true, y_bin_pred)
+            score_all = score_func(y_true, y_pred)
         scores.append(sc)
 
-        
     if not ax: fig,ax = plt.subplots(figsize=(7,5))
     for i,(low,high,sc) in enumerate(zip(ptbins[:-1], ptbins[1:], scores)):
         if i == 0: cur_label = label
         else: cur_label=None
         ax.plot([low, high], [sc, sc], color=color)
         ax.plot((low+high)/2, sc, color=color, marker=marker, label=cur_label)
-    ax.hlines(score_all, ptbins[0], ptbins[-1], color=color, linestyle='dotted', alpha=0.5, label=label+' aver')
+    ax.hlines(score_all, ptbins[0], ptbins[-1], color=color, linestyle=':', alpha=0.5, label=label+' aver')
     if label: 
         plt.legend(ncol=2)        
     ax.set_xlabel('jet $p_{T}^{reco}$ [GeV/$c$]')
