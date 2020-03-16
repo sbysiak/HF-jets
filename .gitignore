@@ -5,6 +5,7 @@
 *.pdf
 *.svg
 
+*.html
 *.csv
 *.pickle
 
