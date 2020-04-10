@@ -8,6 +8,7 @@
 *.html
 *.csv
 *.pickle
+*.zip
 
 ARCHIVE/*
 
