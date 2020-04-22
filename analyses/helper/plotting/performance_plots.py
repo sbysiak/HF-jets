@@ -205,6 +205,83 @@ def plot_score_vs_pt(y_true, y_pred, y_proba, flavour_ptbin, ptbins, score=(roc_
 
 
 
+def plot_score_vs_col(y_true, y_proba, vals, 
+                      bins=20, score=(roc_auc_score, 'ROC AUC'), 
+                      label='', color='k', marker='o', xlabel='', 
+                      show_aver=True, show_distplot=True, 
+                      ax=None):
+    """ Plots selected metric as a function of training variable
+
+    Parameters
+    ----------
+    y_true : 1D array
+        array of true labels
+    y_proba : 1D array
+        array of predicted probabilities (usually clf.predict_proba[:,1])
+    vals : 1D array
+        array of values against which score will be plotted
+    bins : int or array
+        defines binning of `vals` in which score will be agregated, 
+        passed to numpy.histogram
+    score : tuple of function and string
+        tuple of metric and its name
+    label, marker, color : strings or acceptable by matplotlib
+        arguments passed in proper places to matplotlib plotting functions
+    xlabel : string
+        plot's xlabel
+    show_aver : bool
+        if lines corresponding to average score should be plotted
+    show_distplot : bool
+        if underlying distribution of `vals` shoule be plotted
+    ax : matplotlib.axes._subplots.AxesSubplot object or None
+        axes to plot on
+        default=None, meaning creating axes inside function
+
+    Returns
+    -------
+    ax
+    """
+    
+    if not ax: fig,ax = plt.subplots(figsize=(10,5))
+    score_func, score_label = score
+    
+    scores = []
+    _,edges = np.histogram(vals, bins=bins)
+    for el,eh in zip(edges[:-1], edges[1:]):
+        mask = (vals >= el) & (vals <= eh)
+        try:
+            score = score_func(y_true[mask], y_proba[mask])
+        except ValueError:
+            score = None        
+        scores.append(score)
+        
+    for el,eh,sc in zip(edges[:-1], edges[1:], scores):
+        ax.plot([el,eh], [sc,sc], '-', color=color)
+    ax.plot((edges[:-1]+edges[1:])/2, scores, marker=marker, color=color, lw=0, label=label)
+    ax.set_ylabel(score_label)
+    ax.set_xlabel(xlabel, fontsize=18)
+    
+    legend_ncol = 1
+    if show_aver:
+        score_all = score_func(y_true, y_proba)
+        print(label, xlabel)
+        ax.hlines(score_all, edges[0], edges[-1], color=color, linestyle=':', alpha=0.5, label=label+' aver')
+        legend_ncol +=1
+
+    if show_distplot:
+        xlim = ax.get_xlim()
+        ax2 = ax.twinx()
+        sns.kdeplot(vals, color=color, alpha=0.3, ax=ax2, gridsize=1000)
+        ax2.set_ylim(top=ax2.get_ylim()[1]*4)
+        ax2.set_yticks([]) 
+        ax.set_ylim(bottom=ax.get_ylim()[0]*0.95)
+        ax.set_xlim(xlim)
+    
+    ax.legend(ncol=legend_ncol)
+    return ax
+
+
+
 def plot_xgb_learning_curve(eval_res, metric, labels=['train set', 'test set'], ax=None):
     """ plots learning curve based on XGBoost during-training watchlist
 
