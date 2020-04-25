@@ -1,4 +1,4 @@
-
+import numpy as np
 
 
 def feature_importance_report(feat_importances, feat_names, print_raw=10, importance_type='', norm=True):
@@ -58,7 +58,11 @@ def feature_importance_report(feat_importances, feat_names, print_raw=10, import
 
     print(f'*** Aggregated features: ***')
     print('{:<15s} | '.format('category') + importance_type)
+    max_sv = max([int(name.split('_')[2]) for name in feat_names if 'Jet_SecVtx_' in name], default=0)
+    max_track = max([int(name.split('_')[2]) for name in feat_names if 'Jet_Track_' in name], default=0)
     for k,v in sorted(feature_importances.items()):
         if '_' not in k: print('--'*13)
         print(f'{k:<15s} | {v:.3f}')
-        if '_' not in k or k == f'SV_{n_sv-1}' or k == f'track_{n_tracks-1}': print(' '*15 + ' | ')
+        if '_' not in k or k == f'SV_{max_sv}' or k == f'track_{max_track}': print(' '*15 + ' | ')
+    print('--'*13+'\n\n\n')
+

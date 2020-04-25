@@ -1,6 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+
+#import sys
+#sys.path.insert(0, '/eos/user/s/sbysiak/.local/lib/python3.7/site-packages/')
+from sklearn.inspection import partial_dependence
+
 
 def plot_pdp(clf, X, feature, scaler=None, column_names=None, query=None, xlabel=None, show_deciles=True, pd_kwargs={}, plt_kwargs={}, ax=None):
     """ plots partial dependence plot against `feature` for samples satifying `query`
@@ -65,7 +71,7 @@ def plot_pdp(clf, X, feature, scaler=None, column_names=None, query=None, xlabel
 
     if show_deciles:
         xlim = ax.get_xlim()
-        deciles = np.percentile(df[feature], np.arange(0, 101, 10))
+        deciles = np.nanpercentile(df[feature], np.arange(0, 101, 10))
         sns.rugplot(deciles, ax=ax)
         ax.set_xlim(xlim)
         
