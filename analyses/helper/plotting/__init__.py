@@ -7,4 +7,5 @@ from .performance_plots import  (
     plot_xgb_learning_curve,
     plot_score_distr,
     plot_signal_significance,
+    plot_eff_vs_threshold,
 )

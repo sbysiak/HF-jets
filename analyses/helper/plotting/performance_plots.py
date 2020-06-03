@@ -403,3 +403,19 @@ def plot_signal_significance(y_true, y_proba, sig2incl_ratio, norm=True, ax=None
     plt.grid()
     plt.legend()
     return ax
+
+
+
+def plot_eff_vs_threshold(y_true, y_proba, ax=None):
+    fpr, tpr, thresholds = roc_curve(y_true, y_proba)
+    signal_eff = tpr
+    bckg_mistag_rate = fpr
+
+    if not ax: fig,ax = plt.subplots(figsize=(7,5))
+    ax.plot(thresholds[1:], signal_eff[1:], ',-', color='purple', label='signal eff.')
+    ax.plot(thresholds[1:], bckg_mistag_rate[1:], ',-', color='green', label='bckg. mistag. rate')
+    ax.set_xlabel('threshold')
+    ax.set_ylabel('TPR or FPR')
+    ax.legend()
+    ax.grid()
+    return ax
