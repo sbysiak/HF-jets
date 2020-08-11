@@ -3,14 +3,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from sklearn.inspection import partial_dependence
+from ._utils import _add_distplot
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from sklearn.inspection import partial_dependence
 
-def plot_pdp(clf, X, feature, scaler=None, column_names=None, query=None, xlabel=None, show_deciles=True, show_distplot=False, y=None, pardep_kws={}, plt_kws={}, distplot_kws={}, ax=None):
+def plot_pdp(clf, X, feature, scaler=None, column_names=None, query=None, 
+              xlabel=None, show_deciles=True, show_distplot=False, y=None, 
+              pardep_kws={}, plt_kws={}, distplot_kws={}, ax=None):
     """ plots partial dependence plot against `feature` for samples satifying `query`
 
     Parameters
@@ -88,28 +86,9 @@ def plot_pdp(clf, X, feature, scaler=None, column_names=None, query=None, xlabel
         sns.rugplot(deciles, ax=ax)
         ax.set_xlim(xlim)
     if show_distplot:
-        xlim = ax.get_xlim()
-        ax2 = ax.twinx()
-        
-        # defaults for distplot_kws
-        if not distplot_kws:
-            distplot_kws = dict(kde=False, hist=True, bins=200)
-        if 'kde_kws' not in distplot_kws.keys(): 
-            # if distplot_kws is passed but does not contain `kde_kws` key
-            bw = (np.max(feat_vals_orig) - np.min(feat_vals_orig))/100
-            distplot_kws['kde_kws'] = dict(gridsize=10000, shade=True, legend=False, alpha=0.2, bw=bw)
-        if 'hist_kws' not in distplot_kws.keys():
-            distplot_kws['hist_kws'] = dict(lw=2)
-
-        if y is None: 
-            sns.distplot(vals, ax=ax2, legend=False, distplot_kws=distplot_kws)
-        else:
-            sns.distplot(vals[np.array(y)==0], ax=ax2, color='b',  **distplot_kws)
-            sns.distplot(vals[np.array(y)==1], ax=ax2, color='r',  **distplot_kws)
-        ax2.set_ylim(top=ax2.get_ylim()[1])
-        ax2.set_yticks([]) 
-        ax.set_ylim(bottom=ax.get_ylim()[0]*0.5)
-        ax.set_xlim(xlim)
+        distplot_default_kws = dict(bins=np.linspace(*ax.get_xlim(),100), distplot_y_frac=0.8)
+        distplot_kws = {**distplot_default_kws, **distplot_kws}  # passed `distplot_kws` overwrites defaults
+        _add_distplot(ax, vals, y=y, **distplot_kws)        
 
     ax.set_xlabel(xlabel if xlabel else feature)
     ax.set_ylabel('partial dependence')

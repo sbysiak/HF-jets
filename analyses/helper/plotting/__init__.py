@@ -9,3 +9,6 @@ from .performance_plots import  (
     plot_signal_significance,
     plot_eff_vs_threshold,
 )
+from .pdp import (
+    plot_pdp,
+)

@@ -3,6 +3,7 @@ import seaborn as sns
 import numpy as np
 from sklearn.metrics import accuracy_score as acc, f1_score, roc_curve, roc_auc_score, classification_report, confusion_matrix, auc
 from helper.utils import signal_significance
+from ._utils import _add_distplot
 
 def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
     """ plots ROC curve on given `ax`
@@ -207,9 +208,10 @@ def plot_score_vs_pt(y_true, y_pred, y_proba, flavour_ptbin, ptbins, score=(roc_
 
 
 def plot_score_vs_col(y_true, y_proba, vals, 
-                      bins=20, score=(roc_auc_score, 'ROC AUC'), 
+                      bins=20, bins_distplot=None,
+                      score=(roc_auc_score, 'ROC AUC'), 
                       label='', color='k', marker='o', xlabel='', 
-                      show_aver=True, show_distplot=True, 
+                      show_aver=True, show_distplot=True, show_errorbars=True,
                       ax=None):
     """ Plots selected metric as a function of training variable
 
@@ -224,6 +226,9 @@ def plot_score_vs_col(y_true, y_proba, vals,
     bins : int or array
         defines binning of `vals` in which score will be agregated, 
         passed to numpy.histogram
+    bins_distplot : int or array or None
+        passed to distplot
+        if None (default), then distplot gets binning defined by `bins`
     score : tuple of function and string
         tuple of metric and its name
     label, marker, color : strings or acceptable by matplotlib
@@ -233,7 +238,10 @@ def plot_score_vs_col(y_true, y_proba, vals,
     show_aver : bool
         if lines corresponding to average score should be plotted
     show_distplot : bool
-        if underlying distribution of `vals` shoule be plotted
+        if underlying distribution of `vals` should be plotted
+    show_errorbars : bool
+        if errorbars from bootstrap sampling should be plotted
+        it may take a lot of time
     ax : matplotlib.axes._subplots.AxesSubplot object or None
         axes to plot on
         default=None, meaning creating axes inside function
@@ -247,20 +255,35 @@ def plot_score_vs_col(y_true, y_proba, vals,
     score_func, score_label = score
     
     scores = []
+    scores_err = []
     _,edges = np.histogram(vals, bins=bins)
     for el,eh in zip(edges[:-1], edges[1:]):
         mask = (vals >= el) & (vals <= eh)
         try:
             score = score_func(y_true[mask], y_proba[mask])
+            if show_errorbars:
+                bootstrap_scores = []
+                for _ in range(5):
+                    N = sum(mask)
+                    y_true_tmp = np.random.choice(y_true[mask], size=N, replace=True)
+                    y_proba_tmp = np.random.choice(y_proba[mask], size=N, replace=True)
+                    score_tmp = score_func(y_true_tmp, y_proba_tmp)
+                    bootstrap_scores.append(score_tmp)
+                score_err = np.std(bootstrap_scores, ddof=1)
         except ValueError:
-            score = None        
+            score = None
+            score_err = None
+            
         scores.append(score)
-        
+        if show_errorbars: scores_err.append(score_err)
+
     for el,eh,sc in zip(edges[:-1], edges[1:], scores):
         ax.plot([el,eh], [sc,sc], '-', color=color)
-    ax.plot((edges[:-1]+edges[1:])/2, scores, marker=marker, color=color, lw=0, label=label)
+    if show_errorbars: ax.errorbar((edges[:-1]+edges[1:])/2, scores,yerr=scores_err,  marker=marker, color=color, lw=0, elinewidth=2, label=label)
+    else: ax.plot((edges[:-1]+edges[1:])/2, scores,  marker=marker, color=color, lw=0, label=label)
     ax.set_ylabel(score_label)
     ax.set_xlabel(xlabel, fontsize=18)
+    if ax.get_ylim()[1] < max(scores): ax.set_ylim(top=max(scores)+0.2*(max(scores)-min(scores)))
     
     legend_ncol = 1
     if show_aver:
@@ -270,14 +293,9 @@ def plot_score_vs_col(y_true, y_proba, vals,
         legend_ncol +=1
 
     if show_distplot:
-        xlim = ax.get_xlim()
-        ax2 = ax.twinx()
-        sns.kdeplot(vals, color=color, alpha=0.3, ax=ax2, gridsize=1000)
-        ax2.set_ylim(top=ax2.get_ylim()[1]*4)
-        ax2.set_yticks([]) 
-        ax.set_ylim(bottom=ax.get_ylim()[0]*0.95)
-        ax.set_xlim(xlim)
-    
+        if bins_distplot is None: bins_distplot = bins
+        _add_distplot(ax, vals, bins_distplot, y=None, color=color, hist_kws=dict(histtype='step'), distplot_y_frac=0.25)
+
     ax.legend(ncol=legend_ncol)
     return ax
 
