@@ -4,7 +4,7 @@
 // pcm file, so we need to include it explicitly
 // #include "AliAnalysisTaskMyTask.h"
 
-void runAnalysis()
+void runAnalysis_LHC15n()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
     Bool_t local = kTRUE;
@@ -120,13 +120,13 @@ void runAnalysis()
         alienHandler->SetAPIVersion("V1.1x");
 
         // define the output folders
-        alienHandler->SetGridWorkingDir("myWorkingDir_LHC16h3/ptbin10"); // ### !!!
+        alienHandler->SetGridWorkingDir("myWorkingDir_LHC16h3/ptbin10/"); // ### !!!
         alienHandler->SetGridOutputDir("myOutputDir");
 
         // select the input data
         if(isMC){
             // path = /alice/sim/2016/LHC16h3/10/244480/AOD/088/AliAOD.root
-            alienHandler->SetGridDataDir("/alice/sim/2016/LHC16h3/10/");
+            alienHandler->SetGridDataDir("/alice/sim/2016/LHC16h3/10/"); // ### !!!
             alienHandler->SetDataPattern("*AOD/*AliAOD.root");
             alienHandler->SetRunPrefix("");  // MC has no prefix, data has prefix 000
         }
@@ -136,7 +136,7 @@ void runAnalysis()
             alienHandler->SetDataPattern("*pass4/AOD208*AliAOD.root");
             alienHandler->SetRunPrefix("000");  // MC has no prefix, data has prefix 000
         }
-        // runnumbers
+        // runnumbers, good electron PID
         // based on pass3 !!!
         alienHandler->AddRunNumber(244628);
         alienHandler->AddRunNumber(244627);
@@ -161,9 +161,9 @@ void runAnalysis()
         alienHandler->AddRunNumber(244359);
         alienHandler->AddRunNumber(244355);
         alienHandler->AddRunNumber(244351);
-        //alienHandler->AddRunNumber(244343); // not in RunList_*_calo
+        alienHandler->AddRunNumber(244343); // not in RunList_*_calo
         alienHandler->AddRunNumber(244340);
-
+        
         // number of files per subjob
         alienHandler->SetSplitMaxInputFileNumber(3);
         alienHandler->SetExecutable("myTask.sh");

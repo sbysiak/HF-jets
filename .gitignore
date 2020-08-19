@@ -10,7 +10,7 @@
 *.pickle
 *.zip
 
-ARCHIVE/*
+*ARCHIVE*
 
 # python
 *.pyc

@@ -33,12 +33,8 @@ AliAnalysisTaskJetExtractor* AddTaskJetExtractor (TString trackArray="tracks", T
 
 
     if (mode.EqualTo("allJets")){
-        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.1);
-        myTask->GetJetTree()->AddExtractionPercentage(5,10  , 0.3);
-        myTask->GetJetTree()->AddExtractionPercentage(10,20 , 0.6);
-        myTask->GetJetTree()->AddExtractionPercentage(20,40 , 1.0);
-        myTask->GetJetTree()->AddExtractionPercentage(40,200, 1.0);
-        // myTask->GetJetTree()->AddExtractionPercentage(0,200, 1.0);
+        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.0);
+        myTask->GetJetTree()->AddExtractionPercentage(5,200, 1.0);
         return myTask;
     }
     
@@ -51,34 +47,21 @@ AliAnalysisTaskJetExtractor* AddTaskJetExtractor (TString trackArray="tracks", T
 
     if (mode.EqualTo("bJets")){
         myTask->GetJetTree()->AddExtractionJetTypeHM(5);
-        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.1);
-        myTask->GetJetTree()->AddExtractionPercentage(5,10  , 0.3);
-        myTask->GetJetTree()->AddExtractionPercentage(10,20 , 0.6);
-        myTask->GetJetTree()->AddExtractionPercentage(20,40 , 1.0);
-        myTask->GetJetTree()->AddExtractionPercentage(40,200, 1.0);
-        // myTask->GetJetTree()->AddExtractionPercentage(0,200, 1.0);
+        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.0);
+        myTask->GetJetTree()->AddExtractionPercentage(5,200, 1.0);
         return myTask;
     }
     if (mode.EqualTo("cJets")){ // 2x less than b except for last
         myTask->GetJetTree()->AddExtractionJetTypeHM(4);
-        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.05);
-        myTask->GetJetTree()->AddExtractionPercentage(5,10  , 0.15);
-        myTask->GetJetTree()->AddExtractionPercentage(10,20 , 0.3);
-        myTask->GetJetTree()->AddExtractionPercentage(20,40 , 0.5);
-        myTask->GetJetTree()->AddExtractionPercentage(40,200, 1.0);
-        // myTask->GetJetTree()->AddExtractionPercentage(0,200, 1.0);
+        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.0);
+        myTask->GetJetTree()->AddExtractionPercentage(5,200, 1.0);
         return myTask;
     }
     if (mode.EqualTo("udsgJets")){ // 10x less then b except for last
         myTask->GetJetTree()->AddExtractionJetTypeHM(1);
         myTask->GetJetTree()->AddExtractionJetTypeHM(3);
-        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.0005);
-        myTask->GetJetTree()->AddExtractionPercentage(5,10  , 0.03);
-        myTask->GetJetTree()->AddExtractionPercentage(10,20 , 0.1); // +
-        myTask->GetJetTree()->AddExtractionPercentage(20,40 , 0.2);
-        myTask->GetJetTree()->AddExtractionPercentage(40,80 , 0.6);
-        myTask->GetJetTree()->AddExtractionPercentage(80,200, 1.0);
-        // myTask->GetJetTree()->AddExtractionPercentage(0,200, 1.0);
+        myTask->GetJetTree()->AddExtractionPercentage(0,5   , 0.0);
+        myTask->GetJetTree()->AddExtractionPercentage(5,200, 1.0);
         return myTask;
     }
 
