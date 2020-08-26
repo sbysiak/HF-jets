@@ -15,6 +15,7 @@
 # python
 *.pyc
 __pycache__/*
+*.npy
 
 # atom remote-sync
 .remote*.json
