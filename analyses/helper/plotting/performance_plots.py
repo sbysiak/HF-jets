@@ -3,7 +3,7 @@ import seaborn as sns
 import numpy as np
 from sklearn.metrics import accuracy_score as acc, f1_score, roc_curve, roc_auc_score, classification_report, confusion_matrix, auc
 from helper.utils import signal_significance
-from ._utils import _add_distplot
+from ._utils import _add_distplot, _limit_n_points
 
 def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
     """ plots ROC curve on given `ax`
@@ -30,7 +30,10 @@ def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
     """    
     fpr, tpr, _ = roc_curve(y_true, y_proba)
     auc_score = auc(fpr, tpr)
-
+    
+    fpr = _limit_n_points(fpr)
+    tpr = _limit_n_points(tpr)
+    
     label += f' (AUC = {auc_score:0.3f})'
     
     if not ax: 
@@ -72,8 +75,8 @@ def plot_tagging_eff(y_true, y_proba, label='', color='k', title='', ax=None):
     ax
     """
     fpr, tpr, _ = roc_curve(y_true, y_proba)
-    signal_eff = tpr
-    bckg_mistag_rate = fpr
+    signal_eff       = _limit_n_points(tpr)
+    bckg_mistag_rate = _limit_n_points(fpr)
     
     if not ax: fig,ax = plt.subplots(figsize=(7,5))
     ax.plot(signal_eff, bckg_mistag_rate, '.-', lw=1, label=label, color=color)
@@ -312,6 +315,7 @@ def plot_xgb_learning_curve(eval_res, metric, labels=['train set', 'test set'], 
         metric name to be plotted, must be contained in `eval_res[...]`
     labels : list of strings
         contains plot labels for consecutive arrays contained in eval_res,
+        used only if keys in eval_res are 'validation_X'
         default=['train set', 'test set']
     ax : matplotlib.axes._subplots.AxesSubplot object or None
         axes to plot on
@@ -323,11 +327,14 @@ def plot_xgb_learning_curve(eval_res, metric, labels=['train set', 'test set'], 
     """
     if not ax: 
         fig,ax = plt.subplots(figsize=(6,4))
-    train_scores = eval_res['validation_0'][metric]
-    test_scores = eval_res['validation_1'][metric]
-    iters = np.arange(0, len(train_scores))
-    ax.plot(iters, train_scores, 'b.-', label=labels[0])
-    ax.plot(iters, test_scores, 'r.-', label=labels[1])
+    for label,color in zip(eval_res.keys(), ['b', 'r', 'g', 'k', 'y', 'o']):
+        scores = eval_res[label][metric]
+        iters = np.arange(0, len(scores))
+        if 'validation_' in label:
+            leg_label = labels[int(label.replace('validation_', ''))]
+        else:
+            leg_label = label
+        ax.plot(iters, scores, f'{color}.-', label=leg_label)
     ax.set_xlabel('training iterations (#trees)')
     ax.set_ylabel(metric)
     plt.grid(linestyle='--')
@@ -426,8 +433,8 @@ def plot_signal_significance(y_true, y_proba, sig2incl_ratio, norm=True, ax=None
 
 def plot_eff_vs_threshold(y_true, y_proba, ax=None):
     fpr, tpr, thresholds = roc_curve(y_true, y_proba)
-    signal_eff = tpr
-    bckg_mistag_rate = fpr
+    signal_eff = _limit_n_points(tpr)
+    bckg_mistag_rate = _limit_n_points(fpr)
 
     if not ax: fig,ax = plt.subplots(figsize=(7,5))
     ax.plot(thresholds[1:], signal_eff[1:], ',-', color='purple', label='signal eff.')

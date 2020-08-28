@@ -1,6 +1,14 @@
 import numpy as np
 import seaborn as sns
 
+def _limit_n_points(arr, limit=5000):
+    """limits #points in the array (while preserving first and last) for better time/memory efficiency"""
+    if len(arr) > limit:
+        every_n = int(len(arr) / limit)
+        return np.hstack([arr[0], arr[1:-1:every_n], arr[-1]])
+    else:
+        return arr
+
 def _add_distplot(ax, vals, bins, y=None, color='k', hist_kws={}, distplot_y_frac=0.25):
     """
     adds underyling distribution to plot 

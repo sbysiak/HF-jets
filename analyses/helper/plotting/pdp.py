@@ -61,16 +61,21 @@ def plot_pdp(clf, X, feature, scaler=None, column_names=None, query=None,
         column_names = X.columns
 
 
-    X_orig = X if not scaler else scaler.inverse_transform(X)
+    X_orig = scaler.inverse_transform(X) if scaler else X 
     df = pd.DataFrame(X_orig)
     df.columns = column_names
     if query: df = df.query(query)
 
-    df_xgb = pd.DataFrame(scaler.transform(df))
-    df_xgb.columns = [f'f{i}' for i in range(df_xgb.shape[1])]
-    feat_idx = list(column_names).index(feature)
-    feat_name_xgb = f'f{feat_idx}'
-
+    df_xgb = pd.DataFrame(scaler.transform(df)) if scaler else df
+    if feat not in clf.get_booster().feature_names:
+        df_xgb.columns = [f'f{i}' for i in range(df_xgb.shape[1])]
+        feat_idx = list(column_names).index(feature)
+        feat_name_xgb = f'f{feat_idx}'
+    else: 
+        df_xgb.columns = df.columns
+        feat_idx = list(column_names).index(feature)
+        feat_name_xgb = feature
+        
     part_dep, feat_vals = partial_dependence(clf, df_xgb[df_xgb[feat_name_xgb].notna()], features=[feat_name_xgb], **pardep_kws)
     part_dep, feat_vals = np.array(part_dep[0]), np.array(feat_vals[0])
     if scaler: feat_vals_orig = feat_vals * np.sqrt(scaler.var_[feat_idx]) + scaler.mean_[feat_idx]

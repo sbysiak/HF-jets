@@ -57,7 +57,7 @@ def feature_importance_report(feat_importances, feat_names, print_raw=10, import
     if print_raw: print('\n\n')
 
     print(f'*** Aggregated features: ***')
-    print('{:<15s} | '.format('category') + importance_type)
+    print('{:<20s} | '.format('category') + importance_type)
     max_sv = max([int(name.split('_')[2]) for name in feat_names if 'Jet_SecVtx_' in name], default=0)
     max_track = max([int(name.split('_')[2]) for name in feat_names if 'Jet_Track_' in name], default=0)
     for k,v in sorted(feature_importances.items()):
