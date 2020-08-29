@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score as acc, f1_score, roc_curve, roc_auc_
 from helper.utils import signal_significance
 from ._utils import _add_distplot, _limit_n_points
 
-def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
+def plot_roc(y_true, y_proba, sample_weight=None, label='', color='k', title='', ax=None):
     """ plots ROC curve on given `ax`
 
     Parameters
@@ -14,6 +14,8 @@ def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
         array of true labels
     y_proba : 1D array
         array of predicted probabilities (usually clf.predict_proba[:,1])
+    sample_weight : 1D array or None
+        sample weights
     label : str
         legend entry label, AUC score is added to it
     color : str or any acceptable for matplotlib color
@@ -28,7 +30,7 @@ def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
     -------
     ax
     """    
-    fpr, tpr, _ = roc_curve(y_true, y_proba)
+    fpr, tpr, _ = roc_curve(y_true, y_proba, sample_weight=sample_weight)
     auc_score = auc(fpr, tpr)
     
     fpr = _limit_n_points(fpr)
@@ -51,7 +53,7 @@ def plot_roc(y_true, y_proba, label='', color='k', title='', ax=None):
 
 
 
-def plot_tagging_eff(y_true, y_proba, label='', color='k', title='', ax=None):
+def plot_tagging_eff(y_true, y_proba, sample_weight=None, label='', color='k', title='', ax=None):
     """ plots ROC curve in typical HEP form (mistag rate vs tagging eff)
 
     Parameters
@@ -60,6 +62,8 @@ def plot_tagging_eff(y_true, y_proba, label='', color='k', title='', ax=None):
         array of true labels
     y_proba : 1D array
         array of predicted probabilities (usually clf.predict_proba[:,1])
+    sample_weight : 1D array or None
+        sample weights
     label : str
         legend entry label, AUC score is added to it
     color : str or any acceptable for matplotlib color
@@ -74,7 +78,7 @@ def plot_tagging_eff(y_true, y_proba, label='', color='k', title='', ax=None):
     -------
     ax
     """
-    fpr, tpr, _ = roc_curve(y_true, y_proba)
+    fpr, tpr, _ = roc_curve(y_true, y_proba, sample_weight=sample_weight)
     signal_eff       = _limit_n_points(tpr)
     bckg_mistag_rate = _limit_n_points(fpr)
     
@@ -90,7 +94,8 @@ def plot_tagging_eff(y_true, y_proba, label='', color='k', title='', ax=None):
 
 
 
-def plot_confusion_matrix(y_true, y_pred, classes,
+def plot_confusion_matrix(y_true, y_pred, classes, 
+                          sample_weight=None,
                           normalize=False,
                           title=None,
                           cmap=plt.cm.Blues,
@@ -107,7 +112,7 @@ def plot_confusion_matrix(y_true, y_pred, classes,
             title = 'Unnormalized'
 
     # Compute confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred, sample_weight=sample_weight)
     # Only use the labels that appear in the data
 #     classes = classes[unique_labels(y_true, y_pred)]
     if normalize:
@@ -135,7 +140,7 @@ def plot_confusion_matrix(y_true, y_pred, classes,
              rotation_mode="anchor")
 
     # Loop over data dimensions and create text annotations.
-    fmt = '.3f' if normalize else 'd'
+    fmt = '.3f' if (normalize or sample_weight is not None) else 'd'
     thresh = cm.max() / 2.
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
@@ -210,7 +215,7 @@ def plot_score_vs_pt(y_true, y_pred, y_proba, flavour_ptbin, ptbins, score=(roc_
 
 
 
-def plot_score_vs_col(y_true, y_proba, vals, 
+def plot_score_vs_col(y_true, y_proba, vals,
                       bins=20, bins_distplot=None,
                       score=(roc_auc_score, 'ROC AUC'), 
                       label='', color='k', marker='o', xlabel='', 
@@ -344,7 +349,7 @@ def plot_xgb_learning_curve(eval_res, metric, labels=['train set', 'test set'], 
 
 
 
-def plot_score_distr(y_true, y_proba, mistag_thresholds=[1e-3, 1e-2, 1e-1], ax=None, **plot_kwargs):
+def plot_score_distr(y_true, y_proba, mistag_thresholds=[1e-3, 1e-2, 1e-1], sample_weight=None, ax=None, **plot_kwargs):
     """ plots distribution of scores for both classes with (optional) threshold lines
 
     Parameters
@@ -355,6 +360,8 @@ def plot_score_distr(y_true, y_proba, mistag_thresholds=[1e-3, 1e-2, 1e-1], ax=N
         array of predicted probabilities (usually clf.predict_proba[:,1])
     mistag_thresholds : list of numbers or None
         mistagging rates (FPR) used to draw vertical threshold lines
+    sample_weight : 1D array or None
+        sample weights
     ax : matplotlib.axes._subplots.AxesSubplot object or None
         axes to plot on
         default=None, meaning creating axes inside function
@@ -368,8 +375,13 @@ def plot_score_distr(y_true, y_proba, mistag_thresholds=[1e-3, 1e-2, 1e-1], ax=N
     if not ax: 
         fig,ax = plt.subplots(10,6)
     bins = np.linspace(0,1,200)
-    ax.hist(y_proba[y_true==1], bins=bins, histtype='step', color='b', density=1, **plot_kwargs)
-    ax.hist(y_proba[y_true==0], bins=bins, histtype='step', color='r', density=1, **plot_kwargs)
+    if sample_weight is not None:
+        ax.hist(y_proba[y_true==1], bins=bins, weights=sample_weight[y_true==1], histtype='step', color='b', density=1, **plot_kwargs)
+        ax.hist(y_proba[y_true==0], bins=bins, weights=sample_weight[y_true==0], histtype='step', color='r', density=1, **plot_kwargs)
+    else:
+        ax.hist(y_proba[y_true==1], bins=bins, histtype='step', color='b', density=1, **plot_kwargs)
+        ax.hist(y_proba[y_true==0], bins=bins, histtype='step', color='r', density=1, **plot_kwargs)
+        
     ax.semilogy()
     ax.set_xlim(0,1)
     ax.set_ylabel('score probability')
@@ -377,7 +389,7 @@ def plot_score_distr(y_true, y_proba, mistag_thresholds=[1e-3, 1e-2, 1e-1], ax=N
 
     if mistag_thresholds:
         ymin,ymax = ax.get_ylim()
-        fpr, tpr, thresholds = roc_curve(y_true, y_proba)
+        fpr, tpr, thresholds = roc_curve(y_true, y_proba, sample_weight=sample_weight)
         for mistag_thresh in mistag_thresholds:
             for b_tag_eff, mistag_rate, thresh in zip(tpr, fpr, thresholds):
                 if mistag_rate > mistag_thresh:
@@ -387,7 +399,7 @@ def plot_score_distr(y_true, y_proba, mistag_thresholds=[1e-3, 1e-2, 1e-1], ax=N
    
     
     
-def plot_signal_significance(y_true, y_proba, sig2incl_ratio, norm=True, ax=None, **plot_kwargs): 
+def plot_signal_significance(y_true, y_proba, sig2incl_ratio, sample_weight=None, norm=True, ax=None, **plot_kwargs): 
     """ plots signal significance for assumed signal-to-inclusive ratio
 
     Parameters
@@ -401,6 +413,8 @@ def plot_signal_significance(y_true, y_proba, sig2incl_ratio, norm=True, ax=None
     sig2incl_ratio : float (0-1)
         assumed signal-to-inclusive ratio
         passed to `signal_significance`
+    sample_weight : 1D array or None
+        sample weights
     norm : bool
         if the significance should be scaled so that its max = 1
         default=True
@@ -417,7 +431,7 @@ def plot_signal_significance(y_true, y_proba, sig2incl_ratio, norm=True, ax=None
     if not ax: 
         fig,ax = plt.subplots(10,3)
         
-    significances, thresholds = signal_significance(y_true, y_proba, sig2incl_ratio)
+    significances, thresholds = signal_significance(y_true, y_proba, sig2incl_ratio, sample_weight=sample_weight)
     if norm: 
         ax.plot(thresholds, significances/np.nanmax(significances), **plot_kwargs)
     else: 
@@ -431,10 +445,29 @@ def plot_signal_significance(y_true, y_proba, sig2incl_ratio, norm=True, ax=None
 
 
 
-def plot_eff_vs_threshold(y_true, y_proba, ax=None):
-    fpr, tpr, thresholds = roc_curve(y_true, y_proba)
+def plot_eff_vs_threshold(y_true, y_proba, sample_weight=None, ax=None):
+    """ plots tagging and mistaging rates as a function of score threshold
+ 
+    Parameters
+    ----------
+    y_true : 1D array
+        array of true labels, 
+    y_proba : 1D array
+        array of predicted probabilities (usually clf.predict_proba[:,1]),
+    sample_weight : 1D array or None
+        sample weights
+    ax : matplotlib.axes._subplots.AxesSubplot object or None
+        axes to plot on
+        default=None, meaning creating axes inside function
+
+    Returns
+    -------
+    ax
+    """       
+    fpr, tpr, thresholds = roc_curve(y_true, y_proba, sample_weight=sample_weight)
     signal_eff = _limit_n_points(tpr)
     bckg_mistag_rate = _limit_n_points(fpr)
+    thresholds = _limit_n_points(thresholds)
 
     if not ax: fig,ax = plt.subplots(figsize=(7,5))
     ax.plot(thresholds[1:], signal_eff[1:], ',-', color='purple', label='signal eff.')

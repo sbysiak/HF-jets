@@ -1,24 +1,24 @@
 from sklearn.metrics import roc_curve
 import numpy as np
 
-def signal_eff(y_true, y_proba, mistag_rate_thresh):
+def signal_eff(y_true, y_proba, mistag_rate_thresh, sample_weight=None):
     """computes signal efficiency (TPR) at given mistagging rate (FPR)"""
     
     if hasattr(mistag_rate_thresh, '__iter__'):
         effs = []
         for t in mistag_rate_thresh:
-            eff = signal_eff(y_proba, y_true, t)
+            eff = signal_eff(y_proba, y_true, t, sample_weight=sample_weight)
             effs.append(eff)
         return effs
     
-    fpr, tpr, _ = roc_curve(y_true, y_proba)
+    fpr, tpr, _ = roc_curve(y_true, y_proba, sample_weight=sample_weight)
     for b_tag_eff, mistag_rate in zip(tpr, fpr):
         if mistag_rate > mistag_rate_thresh:
             return b_tag_eff
 
 
         
-def signal_significance(y_true, y_proba, sig2incl_ratio, threshold=None):
+def signal_significance(y_true, y_proba, sig2incl_ratio, threshold=None, sample_weight=None):
     """ calculates signal significance S/sqrt(S+B), where S and B are number of true signal and background samples
 
     Parameters
@@ -32,7 +32,8 @@ def signal_significance(y_true, y_proba, sig2incl_ratio, threshold=None):
     threshold : float or None
         threshold at which significance will be returned
         if None, then array of significances for each possible threshold are returned
-        
+    sample_weight : 1D array or None
+        sample weights        
 
     Returns
     -------
@@ -45,7 +46,7 @@ def signal_significance(y_true, y_proba, sig2incl_ratio, threshold=None):
         or single threshold at which significance was calculated (the closest possible threshold 
         not smaller than `threshold` arg passed)
     """   
-    fpr, tpr, thresholds = roc_curve(y_true, y_proba)
+    fpr, tpr, thresholds = roc_curve(y_true, y_proba, sample_weight=sample_weight)
     n_bkg = (1-sig2incl_ratio)* 100
     n_sig = sig2incl_ratio    * 100
     B = n_bkg*fpr
@@ -60,7 +61,7 @@ def signal_significance(y_true, y_proba, sig2incl_ratio, threshold=None):
     
     
     
-def get_optimal_threshold(y_true, y_proba, sig2incl_ratio):
+def get_optimal_threshold(y_true, y_proba, sig2incl_ratio, sample_weight=None):
     """returns threshold optimal from point of view of signal significance"""
-    significances, thresholds = signal_significance(y_true, y_proba, sig2incl_ratio)
+    significances, thresholds = signal_significance(y_true, y_proba, sig2incl_ratio, sample_weight=sample_weight)
     return thresholds[np.nanargmax(significances)]
