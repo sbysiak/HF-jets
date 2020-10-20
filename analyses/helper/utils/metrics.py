@@ -2,7 +2,7 @@ from sklearn.metrics import roc_curve
 import numpy as np
 
 def signal_eff(y_true, y_proba, mistag_rate_thresh, sample_weight=None):
-    """computes signal efficiency (TPR) at given mistagging rate (FPR)"""
+    """computes signal efficiency (TPR) at given mistagging rate (FPR), supports multiple FPRs"""
     
     if hasattr(mistag_rate_thresh, '__iter__'):
         effs = []
@@ -65,3 +65,13 @@ def get_optimal_threshold(y_true, y_proba, sig2incl_ratio, sample_weight=None):
     """returns threshold optimal from point of view of signal significance"""
     significances, thresholds = signal_significance(y_true, y_proba, sig2incl_ratio, sample_weight=sample_weight)
     return thresholds[np.nanargmax(significances)]
+
+
+
+def purity(y_true, y_pred, sample_weight=None):
+    """computes purity aka precision or PPV"""
+    if sample_weight is None: 
+        sample_weight=np.ones_like(y_true)
+    TP = np.sum((y_pred) * y_true * sample_weight)
+    FP = np.sum((y_pred) * (y_true==0) * sample_weight)
+    return TP / (TP+FP)

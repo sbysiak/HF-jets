@@ -4,6 +4,7 @@
 *.png
 *.pdf
 *.svg
+*.eps
 
 *.html
 *.csv
@@ -37,3 +38,5 @@ myTask_validation_merge.sh
 stderr
 stdout
 wn.xml
+
+*nogit*

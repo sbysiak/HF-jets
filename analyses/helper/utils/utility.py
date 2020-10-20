@@ -5,7 +5,13 @@ from IPython.display import Markdown, display
 
 def printmd(string):
     display(Markdown(string))
-    
+
+
+
+def path2period(fpath):
+    idx_LHC = fpath.find('LHC')
+    return(fpath[idx_LHC:fpath.find('/', idx_LHC)])    
+
 
  
 def save_model(model, feat_names, scaler, exp=None, comet_name='model'):
