@@ -62,7 +62,7 @@ def feature_importance_report(feat_importances, feat_names, print_raw=10, import
     max_track = max([int(name.split('_')[2]) for name in feat_names if 'Jet_Track_' in name], default=0)
     for k,v in sorted(feature_importances.items()):
         if '_' not in k: print('--'*13)
-        print(f'{k:<15s} | {v:.3f}')
-        if '_' not in k or k == f'SV_{max_sv}' or k == f'track_{max_track}': print(' '*15 + ' | ')
+        print(f'{k:<20s} | {v:.3f}')
+        if '_' not in k or k == f'SV_{max_sv}' or k == f'track_{max_track}': print(' '*20 + ' | ')
     print('--'*13+'\n\n\n')
 

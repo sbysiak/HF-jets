@@ -67,7 +67,7 @@ def plot_pdp(clf, X, feature, scaler=None, column_names=None, query=None,
     if query: df = df.query(query)
 
     df_xgb = pd.DataFrame(scaler.transform(df)) if scaler else df
-    if feat not in clf.get_booster().feature_names:
+    if feature not in clf.get_booster().feature_names:
         df_xgb.columns = [f'f{i}' for i in range(df_xgb.shape[1])]
         feat_idx = list(column_names).index(feature)
         feat_name_xgb = f'f{feat_idx}'
