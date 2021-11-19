@@ -12,3 +12,5 @@ from .performance_plots import  (
 from .pdp import (
     plot_pdp,
 )
+
+from .results import cut_variation_test

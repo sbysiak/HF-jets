@@ -1,4 +1,5 @@
 import uproot
+import pandas as pd
 
 
 def calc_njets(input_files, n_b=None, trainset_frac_b=None):
@@ -14,6 +15,7 @@ def calc_njets(input_files, n_b=None, trainset_frac_b=None):
         except FileNotFoundError as e:
             print(f'WARNING: file {f} not found!')
             continue
+        tree_name_core = 'JetTree_AliAnalysisTaskJetExtractor_Jet_AKTChargedR040_tracks_pT0150_E_scheme_'
         n_avail_b += froot[tree_name_core+'bJets'].numentries
         n_avail_c += froot[tree_name_core+'cJets'].numentries
         n_avail_udsg += froot[tree_name_core+'udsgJets'].numentries
