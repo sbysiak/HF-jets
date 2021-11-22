@@ -1,6 +1,8 @@
 import pickle
 import numpy as np
 import uproot
+import os
+import pathlib
 from IPython.display import Markdown, display
 
 
@@ -42,6 +44,41 @@ def infer_tree_name(fname, flavour):
         )
     else:
         return candidates[0]
+
+
+def save_df(df, fname_out, debug=True):
+    """writes df to hdf5 format
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe to be written to file
+    fname_out : string
+        path to output file
+    debug : bool
+        if memory/storage info should be printed
+    Returns
+    -------
+    None
+    """
+
+    print(f"Saving dataframe to {fname_out}...")
+    if debug:
+        mem_usage_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
+        mem_usage_idx_mb = df.memory_usage(deep=True)["Index"] / 1024 / 1024
+        print(
+            f"Memory usage = {mem_usage_mb:.2f} MB (index = {mem_usage_idx_mb:.2f} MB). Ncols= {df.shape[1]}, Nrows = {df.shape[0]}"
+        )
+
+    # clear the file first
+    if os.path.exists(fname_out):
+        with open(fname_out, "w") as _:
+            pass
+    pathlib.Path(os.path.dirname(fname_out)).mkdir(parents=True, exist_ok=True)
+    df.to_hdf(fname_out, key="key", format="table", complib="blosc:zlib", complevel=9)
+    if debug:
+        fsize_mb = os.path.getsize(fname_out) / 1024 / 1024
+        print(f"... done. Output file size = {fsize_mb:.2f} MB")
 
 
 def save_model(model, feat_names, scaler, exp=None, comet_name="model"):
