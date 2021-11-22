@@ -81,6 +81,48 @@ def save_df(df, fname_out, debug=True):
         print(f"... done. Output file size = {fsize_mb:.2f} MB")
 
 
+def save_df_train_test(df, fname_out):
+    """splits the df into two parts and stores both in files with some suffixes"""
+
+    def is_train_sample(df):
+        """defines logic for splitting samples into train and test set, currenly jets with odd `entry` are tranining samples"""
+        entry_idx = df.index.names.index("entry")
+        is_odd = (df.index.get_level_values(entry_idx) % 2).to_numpy(dtype=bool)
+        is_train = is_odd
+        return is_train
+
+    is_train = is_train_sample(df)
+    fname_train = fname_out.replace(".", "_train.")
+    save_df(df[is_train], fname_train)
+    fname_test = fname_out.replace(".", "_test.")
+    save_df(df[~is_train], fname_test)
+
+
+def get_pythia_weight(fpath, flavour="udsg"):
+    """returns weight computed as x-section divided by trials,
+    taken from fHistXsectionAfterSel and fHistTrialsAfterSel"""
+
+    def read_hist_integral(fpath, flavour, hist_name):
+        froot = uproot.open(fpath)
+        hist_dir_name = [
+            obj.decode("utf-8")
+            for obj in froot["ChargedJetsHadronCF"].allkeys()
+            if f"{flavour}Jets" in obj.decode("utf-8")
+        ][0]
+        hist_dir = froot["ChargedJetsHadronCF"][hist_dir_name]
+        hist = [h for h in hist_dir if hist_name in str(h.name)][0]
+        return (
+            hist.values.sum()
+            if hasattr(hist, "values")
+            else hist._fTsumwy / hist._fTsumw
+        )
+
+    xsec = read_hist_integral(fpath, flavour, hist_name="fHistXsectionAfterSel")
+    trials = read_hist_integral(fpath, flavour, hist_name="fHistTrialsAfterSel")
+    weight = xsec / trials
+    return weight
+
+
 def save_model(model, feat_names, scaler, exp=None, comet_name="model"):
     """pickles a model and list of feature names to "tmp/" dir and if (exp is passed) uploads it to comet.ml
 
