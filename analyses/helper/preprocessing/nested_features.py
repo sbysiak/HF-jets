@@ -37,6 +37,7 @@ df.drop(['Index__Jet_Track__sortby__IPdAbs__desc', 'Jet_Track_Pt__sortby__IPdAbs
 import numpy as np
 import pandas as pd
 
+
 def _form_index_name(sorted_object_kind, sortby, order):
     """forms name of sorting index
 
@@ -54,17 +55,22 @@ def _form_index_name(sorted_object_kind, sortby, order):
     name : str
         index name e.g. Index__Jet_Track__sortby__Pt__desc
     """
-    sorted_object_kind, sortby, order = [i.strip('_') for i in [sorted_object_kind, sortby, order]]
+    sorted_object_kind, sortby, order = [
+        i.strip("_") for i in [sorted_object_kind, sortby, order]
+    ]
     return f"Index__{sorted_object_kind}__sortby__{sortby}__{order}"
+
 
 def _colname2kind(colname):
     """extracts object kind (e.g. 'Jet_Track') from column name"""
-    for kind in ['Jet_Track', 'Jet_SecVtx', 'Jet_Splitting']:
-        if colname.startswith(kind): break
+    for kind in ["Jet_Track", "Jet_SecVtx", "Jet_Splitting"]:
+        if colname.startswith(kind):
+            break
     return kind
 
+
 def add_sorting_index(df, sorting_col, order):
-    """ adds to `df` a new column, which elements are sorted arrays
+    """adds to `df` a new column, which elements are sorted arrays
 
     df : pd.DataFrame
         input data
@@ -73,18 +79,19 @@ def add_sorting_index(df, sorting_col, order):
     order : str
         'desc' or 'asc'
     """
-    assert order in ['desc', 'asc']
-    order_incr = -1 if order == 'desc' else 1
+    assert order in ["desc", "asc"]
+    order_incr = -1 if order == "desc" else 1
 
     kind = _colname2kind(sorting_col)
-    feat_name = sorting_col.replace(kind+'_', '')
+    feat_name = sorting_col.replace(kind + "_", "")
     index_col_name = _form_index_name(kind, feat_name, order)
 
     func = lambda x: np.argsort(x)[::order_incr]
     df[index_col_name] = df[sorting_col].apply(func)
 
+
 def add_sorted_col(df, col_name, sortby, order):
-    """ adds to a `df` a new column
+    """adds to a `df` a new column
     its each element is an array with order specified in another column (called index, also containing arrays)
 
     df : pd.DataFrame
@@ -99,10 +106,13 @@ def add_sorted_col(df, col_name, sortby, order):
     kind = _colname2kind(col_name)
     sorted_col_name = f"{col_name}__sortby__{sortby}__{order}"
     index_name = _form_index_name(kind, sortby, order)
-    df[sorted_col_name] = [arr[idx] for _,arr,idx in df[[col_name, index_name]].itertuples()]
+    df[sorted_col_name] = [
+        arr[idx] for _, arr, idx in df[[col_name, index_name]].itertuples()
+    ]
+
 
 def add_nth_val(df, col_name, n, fillna=None):
-    """ adds to `df` a new column,
+    """adds to `df` a new column,
     extracted as `n`-th values from `col_name` (which elements are arrays)
 
     df : pd.DataFrame
@@ -113,11 +123,12 @@ def add_nth_val(df, col_name, n, fillna=None):
         'desc' or 'asc'
     """
     kind = _colname2kind(col_name)
-    new_col_name = col_name.replace(kind, f'{kind}_{n}')
-    df[new_col_name] = [arr[n] if n<len(arr) else fillna for arr in df[col_name]]
+    new_col_name = col_name.replace(kind, f"{kind}_{n}")
+    df[new_col_name] = [arr[n] if n < len(arr) else fillna for arr in df[col_name]]
+
 
 def apply_cut(df, cut, sortby, order):
-    """ filters index according to cut on other column
+    """filters index according to cut on other column
     Parameters
     ----------
     df : pd.DataFrame
@@ -129,13 +140,33 @@ def apply_cut(df, cut, sortby, order):
     order : str
         'desc' or 'asc'
     """
-    if len(cut.split(' ')) != 3 or cut.split(' ')[1] not in ['<', '>', '<=', '>=']:
-        raise ValueError("incorrect cut str format, it should be sth like: e.g. \'Jet_SecVtx_Chi2 < 10\' ")
-    cut_colname, gt_lt, cut_value = cut.split(' ')
+    if len(cut.split(" ")) != 3 or cut.split(" ")[1] not in ["<", ">", "<=", ">="]:
+        raise ValueError(
+            "incorrect cut str format, it should be sth like: e.g. 'Jet_SecVtx_Chi2 < 10' "
+        )
+    cut_colname, gt_lt, cut_value = cut.split(" ")
     cut_value = float(cut_value)
     kind = _colname2kind(cut_colname)
     index_name = _form_index_name(kind, sortby, order)
-    if gt_lt == '>':
-        df[index_name] =                 df.apply(lambda row: [idx for idx, val in zip(row[index_name], np.array(row[cut_colname])[row[index_name]]) if val > cut_value], axis=1)
-    elif gt_lt == '<':
-        df[index_name] = df.apply(lambda row: [idx for idx, val in zip(row[index_name], np.array(row[cut_colname])[row[index_name]]) if val < cut_value], axis=1)
+    if gt_lt == ">":
+        df[index_name] = df.apply(
+            lambda row: [
+                idx
+                for idx, val in zip(
+                    row[index_name], np.array(row[cut_colname])[row[index_name]]
+                )
+                if val > cut_value
+            ],
+            axis=1,
+        )
+    elif gt_lt == "<":
+        df[index_name] = df.apply(
+            lambda row: [
+                idx
+                for idx, val in zip(
+                    row[index_name], np.array(row[cut_colname])[row[index_name]]
+                )
+                if val < cut_value
+            ],
+            axis=1,
+        )
