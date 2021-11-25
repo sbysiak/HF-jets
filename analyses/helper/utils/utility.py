@@ -3,6 +3,9 @@ import numpy as np
 import uproot
 import os
 import pathlib
+import subprocess
+import lzma
+import matplotlib.pyplot as plt
 from IPython.display import Markdown, display
 
 
@@ -46,7 +49,45 @@ def infer_tree_name(fname, flavour):
         return candidates[0]
 
 
-def save_df(df, fname_out, debug=True):
+def process_files_list(input_files_param):
+    """
+    if `input_files_param` is file ending with txt extension then returns list of files from that file
+        lines starting with hashtag `#` are skipped
+    if `input_files_param` is command starting from `supported_commands` then it executes it and returns list of files
+    """
+    list_of_files = []
+    if input_files_param.endswith(".txt"):
+        print(f"\nReading files' names from the file: {input_files_param}")
+        with open(input_files_param) as f:
+            for line in f:
+                if line.startswith("#"):
+                    continue
+                list_of_files.append(line.replace("\n", ""))
+    else:
+        supported_commands = ("ls", "find")  # must be tuple not list
+        if input_files_param.startswith(supported_commands):
+            cmd = input_files_param
+        else:
+            cmd = f"ls {input_files_param}"
+        print(f"\nRunning command: {cmd}")
+        cmd_output = subprocess.check_output(cmd, shell=True, text=True)
+        for line in cmd_output.split("\n"):
+            if line.startswith("#"):
+                continue
+            if line:
+                list_of_files.append(line.replace("\n", ""))
+    if len(list_of_files) < 1:
+        raise ValueError("List of files empty!")
+    from_to = (
+        f"from\n{list_of_files[0]}\nto\n{list_of_files[-1]}"
+        if len(list_of_files) > 2
+        else f"{list_of_files}"
+    )
+    print(f"List of N={len(list_of_files)} files created, {from_to}")
+    return list_of_files
+
+
+def save_df(df, fname_out, data_columns=["Jet_Pt"], debug=True):
     """writes df to hdf5 format
 
     Parameters
@@ -57,6 +98,9 @@ def save_df(df, fname_out, debug=True):
         path to output file
     debug : bool
         if memory/storage info should be printed
+    data_columns : list of strings
+        passed to `pd.DataFrame.to_hdf()`,
+        required to use this column in filtering during reading (`pd.read_hdf(..., where)`)
     Returns
     -------
     None
@@ -75,27 +119,53 @@ def save_df(df, fname_out, debug=True):
         with open(fname_out, "w") as _:
             pass
     pathlib.Path(os.path.dirname(fname_out)).mkdir(parents=True, exist_ok=True)
-    df.to_hdf(fname_out, key="key", format="table", complib="blosc:zlib", complevel=9)
+    df.to_hdf(
+        fname_out,
+        key="key",
+        format="table",
+        complib="blosc:zlib",
+        complevel=9,
+        data_columns=data_columns,
+    )
     if debug:
         fsize_mb = os.path.getsize(fname_out) / 1024 / 1024
         print(f"... done. Output file size = {fsize_mb:.2f} MB")
 
 
-def save_df_train_test(df, fname_out):
-    """splits the df into two parts and stores both in files with some suffixes"""
+def is_train_sample(df):
+    """defines logic for splitting samples into train and test set, currenly jets with odd `entry` are tranining samples"""
+    entry_idx = df.index.names.index("entry")
+    is_odd = (df.index.get_level_values(entry_idx) % 2).to_numpy(dtype=bool)
+    is_train = is_odd
+    return is_train
 
-    def is_train_sample(df):
-        """defines logic for splitting samples into train and test set, currenly jets with odd `entry` are tranining samples"""
-        entry_idx = df.index.names.index("entry")
-        is_odd = (df.index.get_level_values(entry_idx) % 2).to_numpy(dtype=bool)
-        is_train = is_odd
-        return is_train
 
+def save_df_train_test(df, fname_out, **kwargs):
+    """splits the df into two parts and stores both in files with some suffixes
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe to be written to file
+    fname_out : string
+        path to output file
+    kwargs : dict
+        passed to `save_df()`
+    Returns
+    -------
+    None
+    """
     is_train = is_train_sample(df)
-    fname_train = fname_out.replace(".", "_train.")
-    save_df(df[is_train], fname_train)
-    fname_test = fname_out.replace(".", "_test.")
-    save_df(df[~is_train], fname_test)
+
+    def replace_last(s, old, new):
+        return new.join(s.rsplit(old, 1))
+
+    # fname_train = fname_out.replace(".hdf", "_train.hdf")
+    fname_train = replace_last(fname_out, ".", "_train.")
+    save_df(df[is_train], fname_train, **kwargs)
+    # fname_test = fname_out.replace(".hdf", "_test.hdf")
+    fname_test = replace_last(fname_out, ".", "_test.")
+    save_df(df[~is_train], fname_test, **kwargs)
 
 
 def get_pythia_weight(fpath, flavour="udsg"):
@@ -107,7 +177,7 @@ def get_pythia_weight(fpath, flavour="udsg"):
         hist_dir_name = [
             obj.decode("utf-8")
             for obj in froot["ChargedJetsHadronCF"].allkeys()
-            if f"{flavour}Jets" in obj.decode("utf-8")
+            if f"{flavour}Jets_histos" in obj.decode("utf-8")
         ][0]
         hist_dir = froot["ChargedJetsHadronCF"][hist_dir_name]
         hist = [h for h in hist_dir if hist_name in str(h.name)][0]
@@ -169,3 +239,78 @@ def save_model(model, feat_names, scaler, exp=None, comet_name="model"):
         )
 
     return fpath_model, fpath_featnames, fpath_scaler
+
+
+def save_plot(
+    fpath,
+    comet_exp=None,
+    comet_plotname=None,
+    store_png=True,
+    store_svg=True,
+    store_pickle=True,
+):
+    """saves plot in multiple formats/places: in comet_ml, png, svg, pickle
+
+    svg is compressed to .svgz and pickle is compressed using lmza to .xz
+    to open pickled one:
+
+    ```
+    %matplotlib notebook
+    with lzma.open('plotname.pickle.xz', "rb") as f:
+        ax = pickle.load(f)
+        # ax.get_lines()
+        # ax.patches
+        # ax.collections[0].get_offsets().data
+        # ax.get_legend()
+
+    ```
+
+    Parameters
+    ----------
+    fpath : str
+        path where plot should be stored, extension is dropped
+    comet_exp : string or comet_ml.[Existing]Experiment
+        comet_ml experiment (faster)
+        or string based on which the ExistingExperiment is created internally and then closed (slower)
+        if None then logging to comet_ml is skipped
+    comet_plotname : string
+        file name in comet_ml, if not provided it is file name extracted from `fpath`
+    store_png/svg/pickle : bool
+        if given format should be stored
+
+    Returns
+    -------
+    None
+    """
+    if fpath.split(".")[-1] in ["png", "svg", "pickle"]:
+        fpath = ".".join(fpath.split(".")[:-1])
+
+    def check_min_size(fname, min_size_kb=3):
+        fsize_kb = os.path.getsize(fname) / 1024
+        if fsize_kb < min_size_kb:
+            print(
+                f"Warning: something may be wrong. Size of plot {fname} is only {fsize_kb:.1f} KB - below threshold of {min_size_kb} KB. Check if the file is not empty."
+            )
+
+    pathlib.Path(fpath).parents[0].mkdir(parents=True, exist_ok=True)
+    if store_png:
+        plt.savefig(fpath + ".png")
+        check_min_size(fpath + ".png", 3)
+    if store_svg:
+        plt.savefig(fpath + ".svgz", format="svgz")
+        check_min_size(fpath + ".svgz", 3)
+    if store_pickle:
+        with lzma.open(fpath + ".pickle.xz", "wb") as f:
+            pickle.dump(plt.gca(), f)
+        check_min_size(fpath + ".pickle.xz", 15)
+
+    if comet_exp:
+        if not comet_plotname:
+            comet_plotname = os.path.basename(fpath)
+        do_close_exp = False
+        if isinstance(comet_exp, str):
+            comet_exp = comet_ml.ExistingExperiment(previous_experiment=comet_exp)
+            do_close_exp = True
+        comet_exp.log_figure(comet_plotname)
+        if do_close_exp:
+            comet_exp.end()
