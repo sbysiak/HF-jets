@@ -5,4 +5,4 @@ from .nested_features import (
     apply_cut,
     extract_features,
 )
-from .data_selection import create_index, calc_njets
+from .data_selection import create_index, calc_njets, get_hdf5_nrows

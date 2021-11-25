@@ -17,7 +17,16 @@ def create_index(fname, tree_name):
     return multi_index.index
 
 
-def calc_njets(input_files, n_b=None, trainset_frac_b=None):
+def get_hdf5_nrows(fpath, key="key"):
+    try:
+        with pd.HDFStore(fpath) as store:
+            return store.get_storer(key).nrows
+    except Exception as e:
+        print(f"ERROR: file {fpath} cannot be opened.\n{e}")
+        return 0
+
+
+def calc_njets(input_files, n_b=None, trainset_frac_b=None, ratio_c_to_udsg=0.1):
     if n_b and trainset_frac_b:
         raise ValueError(
             "One cannot provide both parameters: `n_b` and `trainset_frac_b`"
@@ -29,24 +38,40 @@ def calc_njets(input_files, n_b=None, trainset_frac_b=None):
 
     n_avail_b, n_avail_c, n_avail_udsg = 0, 0, 0
     for f in input_files:
-        try:
-            froot = uproot.open(f)
-        except FileNotFoundError as e:
-            print(f"WARNING: file {f} not found!")
-            continue
-        tree_name_core = "JetTree_AliAnalysisTaskJetExtractor_Jet_AKTChargedR040_tracks_pT0150_E_scheme_"
-        n_avail_b += froot[tree_name_core + "bJets"].numentries
-        n_avail_c += froot[tree_name_core + "cJets"].numentries
-        n_avail_udsg += froot[tree_name_core + "udsgJets"].numentries
+        if f.endswith(".root"):
+            try:
+                froot = uproot.open(f)
+            except FileNotFoundError as e:
+                print(f"WARNING: file {f} not found!")
+                continue
+            tree_name_core = "JetTree_AliAnalysisTaskJetExtractor_Jet_AKTChargedR040_tracks_pT0150_E_scheme_"
+            n_avail_b += froot[tree_name_core + "bJets"].numentries
+            n_avail_c += froot[tree_name_core + "cJets"].numentries
+            n_avail_udsg += froot[tree_name_core + "udsgJets"].numentries
+        elif f.endswith(".hdf5"):
+            n = get_hdf5_nrows(f)
+            if "bJets" in f:
+                n_avail_b += n
+            elif "cJets" in f:
+                n_avail_c += n
+            elif "udsgJets" in f:
+                n_avail_udsg += n
+            else:
+                raise ValueError(f"filename {f} does not contain flavour!")
+        else:
+            raise ValueError(
+                f'file {f} has unsupported extension! Use ".root" or ".hdf5"'
+            )
+
     #     print(n_avail_b, n_avail_c, n_avail_udsg)
 
     if not n_b:
         n_b = int(n_avail_b * trainset_frac_b)
     else:
         trainset_frac_b = n_b / n_avail_b  # round_down(n_b / n_avail_b, 4)
-    n_c = int(0.1 * n_b)
-    n_udsg = int(0.9 * n_b)
 
+    n_c = int(ratio_c_to_udsg * n_b)
+    n_udsg = int((1 - ratio_c_to_udsg) * n_b)
     trainset_frac_c = n_c / n_avail_c  # round_down(n_c / n_avail_c, 4)
     trainset_frac_udsg = n_udsg / n_avail_udsg  # round_down(n_udsg / n_avail_udsg, 4)
 
