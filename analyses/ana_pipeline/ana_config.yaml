@@ -1,0 +1,460 @@
+#######################################################################
+  skeleton:
+    description: |
+      multiline
+      description
+    parameters:
+    decisions:
+
+    input:
+    output:
+    technical_outputs:
+
+    plots:
+    technical_plots:
+
+    tests:
+
+#######################################################################
+  ROOT2array:
+    description: |
+      conversion from ROOT files to 1D-array-like format with preserved index
+      meant to extract additional feature from ROOT file without repeating whole process
+    parameters:
+      data_type: mc # mc or data
+      # txt file or pattern or bash command starting with "ls" or "find"
+      # list_of_input_root_files: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/list_of_root_files_tiny.txt  # txt file or pattern
+      list_of_input_root_files: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/list_of_root_files_full_train.txt  # txt file or pattern
+      # list_of_input_root_files: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/list_of_root_files_full_train_part_10.txt  # txt file or pattern
+      # list_of_input_root_files: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/ana_results/iter3/*/AnalysisResults.root -name "AnalysisResults.root"  # txt file or pattern
+      # list_of_input_root_files: /eos/user/s/sbysiak/SWAN_projects/HF-jets/TRAIN_OUTPUT/alice/cern.ch/user/a/alitrain/PWGHF/HFCJ_pp_MC/1133_20210427-1840_child_*/merge_runlist_2/AnalysisResults.root
+      # list_of_input_root_files: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/TRAIN_OUTPUT/alice/cern.ch/user/a/alitrain/PWGHF/HFCJ_pp_MC/1133_20210427-1840_child_*/merge_runlist_2/AnalysisResults.root
+      # get_feature_code: get_feature_Jet_ConstitAverPt.py # code to extract feature from ROOT file
+      # branches_to_read: ['Jet_Pt', 'Jet_NumTracks']
+      # output_fname: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/feature_Jet_ConstitAverPt.hdf5
+      # get_feature_code: get_feature_Jet_Mass.py # code to extract feature from ROOT file
+      # branches_to_read: ['Jet_Pt', 'Jet_Shape_Mass_NoCorr']
+      # output_fname: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/feature_Jet_Mass_mc.hdf5
+
+      get_feature_code: get_feature_Jet_SV_Mass_mostDisplacedSV.py # code to extract feature from ROOT file
+      branches_to_read: ['Jet_Pt', 'Jet_SecVtx_Lxy', 'Jet_SecVtx_Mass']
+      output_fname: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/feature_Jet_SV_Mass_mostDisplaced_mc-test.hdf5
+      # output_fname: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/feature_Jet_SV_Mass_mostDisplaced_data.hdf5
+
+      # get_feature_code: get_feature_Jet_Matching.py # code to extract feature from ROOT file
+      # branches_to_read: ['Jet_Pt', 'Jet_MC_MatchedDetLevelJet_Pt', 'Jet_MC_MatchedDetLevelJet_Distance']
+      # output_fname: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/feature_Jet_Matching_part_10.hdf5
+    decisions:
+
+    input:
+    output:
+    technical_outputs:
+
+    plots:
+    technical_plots:
+
+    tests:
+      matching - compare 1D array with ROOT2pd
+
+
+#######################################################################
+  ROOT2pd:
+    description: |
+      conversion from ROOT files to pandas-readable format, like csv, HDF5 or parquet
+      includes train-test split
+      can contain a superset of really used features, in order to avoid repetition of this step
+      it should also extract weights
+
+    parameters:
+      list_of_input_root_files: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/list_of_root_files_full_train.txt  # txt file or pattern
+      data_type: mc # mc or data
+      output_fname: 'split'
+      # output_fname: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/dataset.hdf5
+      input_fname_root: '/eos/user/s/sbysiak/SWAN_projects/HF-jets/TRAIN_OUTPUT/alice/cern.ch/user/a/alitrain/PWGHF/HFCJ_pp_MC/'
+      output_fname_root: 'testRun/dataset/mc/'
+
+      # list_of_input_root_files: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/ana_results/iter3/*/AnalysisResults.root -name "AnalysisResults.root"  # txt file or pattern
+      # data_type: data # mc or data
+      # output_fname: 'split'
+      # input_fname_root: '/eos/user/s/sbysiak/SWAN_projects/HF-jets/ana_results/iter3/'
+      # output_fname_root: 'testRun/dataset/data/'
+
+      branches_to_read: ["Jet_Pt",
+                         "Jet_Phi", "Jet_Eta", "Jet_Area", "Jet_NumTracks", "Jet_NumSecVertices",
+                         "Jet_Shape_Mass_NoCorr", "Jet_Shape_LeSub_NoCorr", "Jet_Shape_Angularity",
+                         "Jet_Shape_MomentumDispersion", "Jet_Shape_TrackPtMean", "Jet_Shape_TrackPtMedian",
+                         "Event_BackgroundDensity", "Event_BackgroundDensityMass",
+                         "Jet_Track_Pt",
+                         "Jet_Track_Phi", "Jet_Track_Eta",
+                         "Jet_Track_IPd", "Jet_Track_IPz", "Jet_Track_CovIPd", "Jet_Track_CovIPz",
+                         "Jet_SecVtx_Mass",
+                         "Jet_SecVtx_Lxy", "Jet_SecVtx_SigmaLxy",
+                         "Jet_SecVtx_Chi2", "Jet_SecVtx_Dispersion"
+                         ]
+      features_sv: [
+                    # 'Jet_SecVtx_X', 'Jet_SecVtx_Y', 'Jet_SecVtx_Z',
+                    'Jet_SecVtx_Mass',
+                    'Jet_SecVtx_Lxy',
+                    'Jet_SecVtx_SigmaLxy',
+                    'Jet_SecVtx_Chi2',
+                    'Jet_SecVtx_Dispersion',
+                    'Jet_SecVtx_LxyNsigma',
+                   ]
+      features_tracks: ['Jet_Track_Pt',
+                      'Jet_Track_Phi', 'Jet_Track_Eta',
+                      # 'Jet_Track_DeltaPhi', 'Jet_Track_DeltaEta', 'Jet_Track_PtFrac', 'Jet_Track_DeltaR',
+                      # 'Jet_Track_Charge', 'Jet_Track_Label',
+                      # 'Jet_Track_CovIPd', 'Jet_Track_CovIPz',
+                      # 'Jet_Track_ProdVtx_X', 'Jet_Track_ProdVtx_Y', 'Jet_Track_ProdVtx_Z',
+                      # 'Jet_Track_PID_ITS', 'Jet_Track_PID_TPC', 'Jet_Track_PID_TOF', 'Jet_Track_PID_TRD',
+                      # 'Jet_Track_PID_Reconstructed', 'Jet_Track_PID_Truth',
+                      # 'Jet_Track_IPd'         , 'Jet_Track_IPz',
+                      # 'Jet_Track_IPdAbs'      , 'Jet_Track_IPzAbs',
+                      'Jet_Track_IPdSigma'    , 'Jet_Track_IPzSigma',
+                      'Jet_Track_IPdNsigma'   , 'Jet_Track_IPzNsigma',
+                      'Jet_Track_IPdNsigmaAbs', 'Jet_Track_IPzNsigmaAbs',
+                     ]
+      n_sv: 10
+      n_tracks: 15
+      sortby_sv: 'LxyNsigma'
+      sortby_tracks: 'IPdNsigmaAbs'
+      sorting_mode_sv: 'desc'
+      sorting_mode_tracks: 'desc'
+      # other_features:  NO NEED - DETERMINED BY branches_to_read          # basic kine even if not used in training + validation later like jet_mass
+
+    decisions:
+      train_test_splitting:      # reproducible, splitting within single run also
+      pythia_weight_extraction:  #
+    input: ROOT files # from both MC and data
+    output: data in some other, csv-like, pd-readable format
+    technical_outputs: [logs, code for feature extraction, parameters]
+    plots: No
+    technical_plots: No  # but collect some performance benchmark
+
+    tests:
+      matching - extract pt using index and uproot
+
+
+
+#######################################################################
+  data_MC_weighting:
+    description: |
+      optional step
+      so far includes only data-MC weighting, but if extended then rename
+      how to use these weights?
+      - PYTHIA W -> new W
+      - but keep both
+      - use in training?
+      - use in model performance?
+      - use in corrections?
+      - use in unfolding?
+    parameters:
+      make: # False or True
+    decisions:
+
+    input: pd-readable data
+    output: pd-readable data
+    technical_outputs:
+
+    plots: control plots
+    technical_plots: No
+
+#######################################################################
+  training:
+    description: |
+      model training + performance plots + feature importance etc
+      everything stored in comet_ml
+      set to XGB
+    parameters:
+      list_of_input_files_train: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/ -name "jetDataFrame*Jets_i*train*.hdf5"
+      list_of_input_files_test: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/ -name "jetDataFrame*Jets_i*test*.hdf5"
+      # list_of_input_files_train: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/ -name "jetDataFrame*i0*train*.hdf5" | grep 1133 | grep runlist_2
+      # list_of_input_files_test: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/ -name "jetDataFrame*i0*test*.hdf5" | grep 1133 | grep runlist_2
+      output_dir: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/prel_report4/single/
+      # num_models: [5,10,20,30,40,50,70,100,200] # "single" or per pt bin, then binning
+      num_models: [0,200]
+      training_weights: none # No or from PYTHIA (aleady in input file) or from reweighting - then provide file with weights
+               # also: model performance should be always reported with at least PYTHIA weights
+      memory_method : internal # external or internal or incremental
+      input_data:
+        # always all files
+        # frac_b, frac_c, frac_udsg
+        # modes:
+        # - equal number of sig and bckg
+        # - equal fractions
+        # - as above but x factor?
+        # fractions: {'b': 1, 'c':1, 'udsg':1}
+        # fractions: {'b': 0.2, 'c': 0.01, 'udsg': 0.007}
+        fractions:
+        n_b: 0.5 # is either fraction (if <= 1) or number of b-jets (if > 1)
+      # we should be robust against these numbers
+      # they are not realistic anyway
+      # especially taking c-to-udsg ratio across whole pt range without weights and specifying it locally does not make sense
+      # pretty necessary test: modify these numbers by order of magnitude and compare results (for ROC split c and udsg)
+      # this parametrization seems to be the most intuitive and robust against input changes
+      # to enforce natural change all fractions to the same number
+        ratio_b_to_rest: 1 # set to 1 to have equal signal and bckg samples
+        ratio_c_to_udsg: 0.1 # default 10%, but try verying x3-5 both sides
+
+
+        training_columns_jet: ['Jet_Pt', 'Jet_NumTracks', 'Jet_NumSecVertices']   # VALID: has to be subset of ROOT2pd::features_jet
+        training_columns_sv:   ['Jet_SecVtx_LxyNsigma',
+                              # 'Jet_SecVtx_Mass',
+                              'Jet_SecVtx_Lxy',
+                              'Jet_SecVtx_SigmaLxy',
+                              'Jet_SecVtx_Chi2',
+                              'Jet_SecVtx_Dispersion',
+                             ]  # VALID: has to be subset of ROOT2pd::features_sv
+        training_columns_tracks: ['Jet_Track_Pt',
+                              # 'Jet_Track_Phi', 'Jet_Track_Eta',
+                              # 'Jet_Track_IPdSigma'    , 'Jet_Track_IPzSigma',
+                              'Jet_Track_IPdNsigma'   , 'Jet_Track_IPzNsigma',
+                              'Jet_Track_IPdNsigmaAbs', 'Jet_Track_IPzNsigmaAbs',
+                              ]  # VALID: has to be subset of ROOT2pd::features_track
+        n_sv:  3                  # VALID: has to be smaller or equal ROOT2pd::n_sv
+        n_tracks: 5                # VALID: has to be smaller or equal ROOT2pd::n_track
+
+
+      xgboost:
+        objective: 'binary:logistic'
+        n_estimators: 100
+        learning_rate: 0.3
+        max_depth: 5
+        tree_method: 'approx'
+        min_split_loss: 0 # aka gamma
+        reg_lambda: 0 # aka L2
+        subsample: 0.5
+        colsample_bytree: 0.5
+        colsample_bynode: 0.5
+        # scale_pos_weight: np.sum(y_train==0)/np.sum(y_train==1)
+        random_state: 123
+        eval_metric: ['auc', 'logloss']
+
+      # -> comet_ml
+
+    decisions:
+      algorithm: XGBoost
+      memory_method: out-of-core (OLD or NEW) or plain in memory or incremental learning # related to input format
+      weights: PYTHIA
+
+    input: pd-readable data
+    output: model (pickled)
+    technical_outputs:
+      - training metrics:
+        - AUC
+        - mistagRate@taggingEff
+      - feature_importance # xgb::weight, xgb::total_gain, permutation
+      - hashcode for comet
+    plots:
+      - learning_curves
+      - in_training_plots:
+        - mistagging_rate_VS_tagging_efficiency
+      - performance plots:
+        - bulk: # based on scores only
+          - scores_distributions
+          - ROC
+          - mistagging_rate_VS_tagging_efficiency
+          - tagging_eff_vs_threshold
+        - bulk_per_ptbin
+        - differential:
+          - score_vs_col # {aver_score, auc, eff@mistagRate, purity?}__vs__{pt, eta, phi, numTracks}
+          - pdp
+
+    technical_plots:
+    tests:
+      - stored model prediction == trained model from memory
+
+
+#######################################################################
+  apply_model:
+    TODO: split by input file, so that there is no mix between e.g. LHC15n and LHC17p
+    description: |
+      apply trained model on full set of data and MC
+      how to store the predictions ???
+      - just array
+          - min: just predicition with preserved matching
+          - max: prediction, pt, weight, isTraining, validation_features ... ?
+      - add as column to input
+      - probably: array + multiIndex
+    parameters:
+      # list_of_input_files:  find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/dataset/mc/ -name "jetDataFrame_*.hdf5"
+      # output_fpath: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/pred_mc_v0.hdf5.readonly
+      # list_of_input_files:  find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/dataset/mc/ -name "jetDataFrame_*.hdf5" | grep 1133 | grep runlist_2 | grep i0
+      # output_fpath: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/pred_mc_subsample_v0.hdf5
+      model_fpath: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/b_tagger_v0.zip
+      list_of_input_files:  find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/dataset/mc/ -name "jetDataFrame_*.hdf5"
+      input_fname_root: '/eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/dataset/'
+      output_fname_root: '/eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/predictions_v0/'
+    decisions:
+
+    input: pd-readable data
+    output: scores with multiIndex
+    technical_outputs:
+
+    plots:
+    technical_plots:
+
+    tests:
+
+
+
+#######################################################################
+  modelCalibration:
+    description: |
+      optional step
+    parameters:
+      method: # e.g. isotonic, sigmoid (aka Platt’s)
+    decisions:
+
+    input: scores, pTs, weights
+    output: transformed scores, (pTs, weights)
+    technical_outputs:
+
+    plots:
+    technical_plots:
+      - calibration curve
+      - scores distributions before and after
+
+    tests:
+
+#######################################################################
+  data_mc_scores_comparison:
+    description: |
+      compare scores between data and MC
+      probably result is negative, then it has to be corrected in data-driven estimation of eff and purity
+      or some other method (? reweighting of input space? or reweighting of score distr? or isotonic regression)
+
+      closure require usage of weights for (pseudo)data
+    parameters:
+      list_of_input_files_mc: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/predictions_v0/mc/ -name "pred*test.hdf5"   # txt with files containing scores, pts, etc
+      list_of_input_files_data: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/predictions_v0/data/ -name "pred*.hdf5" | grep "FAST\|CENT_woSDD"   # txt with files containing scores, pts, etc
+      output_dir: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/plots/data_mc_scores_comparison//
+      pt_binning:  [5,10,15,20,30,40,50,60,80,100]           # array with bin edges or list of such
+      cut_variation_args: [['purity', 0.55, 0.25, 10],  ['tpr', 0.4, 0.20, 10]]  # mode, cut_ref, delta_cut, n_inter_points
+      nbins_proba: 50
+      # score OR eff OR mistag rate OR purity OR calibrated_score? or list of such
+      # Barlow_range:           # 4 numbers: left, central, right, step  or list of such
+                              # or 3 numbers: left, right, step (central = mid of left and right) or list of such
+    decisions:
+
+    input: scores, pTs, weights
+    output: No
+    technical_outputs:
+
+    plots:
+      - scores distributions in data and MC in pt bins
+      - Barlow test
+      - stability reports
+    technical_plots:
+
+    tests:
+
+
+#######################################################################
+  data_driven_purity:
+    description: |
+      purity (eff to be added?) estimation based on template fits
+    parameters:
+      list_of_input_files_mc: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/predictions_v0/mc/ -name "pred*test.hdf5"   # txt with files containing scores, pts, etc
+      list_of_input_files_data: find /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/predictions_v0/data/ -name "pred*.hdf5" | grep "FAST\|CENT_woSDD"   # txt with files containing scores, pts, etc
+      # list_of_input_files_scores:    # txt with files containing scores, pts, etc
+      list_of_input_files_mc_add:   testRun/fit_var_mc.hdf5  # list_of_files
+      list_of_input_files_data_add: testRun/fit_var_data.hdf5     # list_of_files
+      # list_of_input_files_mc_add:   testRun/feature_Jet_SV_Mass_mostDisplaced_mc.hdf5  # list_of_files
+      # list_of_input_files_data_add: testRun/feature_Jet_SV_Mass_mostDisplaced_data.hdf5     # list_of_files
+      # list_of_input_files_mc_add:   null  # list_of_files
+      # list_of_input_files_data_add: null    # list_of_files
+
+       # 'Jet_SecVtx_0_LxyNsigma__sortby__LxyNsigma__desc',
+       # 'Jet_SecVtx_0_Mass__sortby__LxyNsigma__desc'],
+      # add_columns: ['Jet_Shape_Mass_NoCorr',]
+      add_columns: ['Jet_SecVtx_0_LxyNsigma__sortby__LxyNsigma__desc',]
+      # add_columns: ['Jet_SecVtx_0_Mass__sortby__Lxy__desc',]
+      # add_columns: null
+      # pt_binning:  [5,10,15,20,30,40,50,60,80,100]
+      pt_binning: [5,10,15,20,25,30,40,50,70,100]
+      # pt_binning: [10,20,30,50]
+      # fit_col_name:     Jet_Shape_Mass_NoCorr       # jet_mass or sv_mass or JProb or scores or f_E
+      fit_col_name:     Jet_SecVtx_0_LxyNsigma__sortby__LxyNsigma__desc       # jet_mass or sv_mass or JProb or scores or f_E
+      # fit_col_name: 'Jet_SecVtx_0_Mass__sortby__Lxy__desc'
+      # fit_col_name: proba
+      fillna_val: -50
+      # fit_var_binning:  [50,0,25]      # root-like order
+      # comp_eff:               # true or false
+      # comp_purity:            # true or false
+      thresh_var: purity            # score OR eff OR mistag rate OR purity  or list of such
+      thresholds: [0.3, 0.5, 0.7]            # array to repeat fitting or list of such
+      # thresholds: [0.5, 0.7, 0.8, 0.85, 0.9, 0.95, 0.97]            # array to repeat fitting or list of such
+      output_dir: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/plots/fits_LxyNsigma_50-m100-400/binning_50-m50-100/
+      # output_dir: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/plots/fits_sv_mass/
+      # output_dir: /eos/user/s/sbysiak/SWAN_projects/HF-jets/analyses/ana_pipeline/testRun/plots/fits_proba/
+      fit_type: ml # ML (aka NLL), chi2, chi2_ext
+      library: roofit # RooFit or zfit
+      make_closure: true
+      # mode:  # default or closure
+
+    decisions:
+        - erorr_treatment (or param)
+    input: scores, pTs, weights, fitted variable
+    output: eff and/or purity per ptbin as TH1 for each (thresh_var, threshold) pair
+            # returns number of files like: eff_score08, pur_score08, eff_score09, pur_score09 etc
+            # or eff_purity02, eff_purity04, eff_purity06, eff_purity08
+
+    technical_outputs:
+
+    plots:
+      - template fits
+      - comparison MC-driven vs data-driven
+    technical_plots:
+
+    tests:
+
+
+
+#######################################################################
+  unfolding:
+    description: |
+      creates RM, unfolds, make tests
+      if mode="MC" then it performs closure
+    parameters:
+      # binnings: array or binning as (start,stop,step) if 3 elements
+      # binning_pub: []
+      binning_det: [10,15,20,55,60,70,80,90,100]
+      binning_part: [10,20,30,40,50,60,70,80,90,100]
+      binning_fine: [0,200,1]
+
+      # Response matrix
+      list_of_files_RM:
+      RM_origin: "inclusive"     # "inclusive" or "b"
+      RM_normalization:          # PYTHIA or POWHEG or something else - HOW?
+      algo: bayes                # bayes, SVD etc
+
+      #
+      reg_param: 4    # int
+      reg_param_variation: [1,2,3,4,5,6,8,10] # list, VALID: in SVD smaller than n_bins
+      mode: # MC = closure test, data = real unfolding
+      closure_pseudodata_fraction: 0.01 # should match the data size, every (1/frac)-th row is pseudodata
+
+
+    decisions:
+      - response matrix: inclusive, b-jets (gen)
+    input: corrected measured spectrum
+    output: unfolded spectrum
+    technical_outputs:
+
+    plots:
+      - response matrices:
+          - RM fine
+          - RM rebinned
+          - RM normalized
+      - spectrum measured, unfolded (optionally also truth, folded)
+      - folding test (ratio folded/measured)
+      - unfolding test (ratio unfolded/truth)
+
+    technical_plots:
+      - copy of MC and data driven eff and purities which were used
+      - unfolding errors
+      - correlation plot
+      - toy
+
+    tests:
