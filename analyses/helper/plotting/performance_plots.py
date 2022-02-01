@@ -457,6 +457,7 @@ def plot_score_distr(
     y_proba,
     mistag_thresholds=[1e-3, 1e-2, 1e-1],
     sample_weight=None,
+    nbins=200,
     ax=None,
     **plot_kwargs,
 ):
@@ -472,6 +473,8 @@ def plot_score_distr(
         mistagging rates (FPR) used to draw vertical threshold lines
     sample_weight : 1D array or None
         sample weights
+    nbins : int
+        number of bins in histogram
     ax : matplotlib.axes._subplots.AxesSubplot object or None
         axes to plot on
         default=None, meaning creating axes inside function
@@ -484,7 +487,7 @@ def plot_score_distr(
     """
     if not ax:
         fig, ax = plt.subplots(10, 6)
-    bins = np.linspace(0, 1, 200)
+    bins = np.linspace(0, 1, nbins)
     if sample_weight is not None:
         ax.hist(
             y_proba[y_true == 1],
