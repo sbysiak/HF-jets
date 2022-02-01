@@ -258,7 +258,7 @@ def extract_features(
         df["Jet_Track_DeltaR"] = df.apply(
             lambda row: np.array(
                 [
-                    np.sqrt(tr_phi**2 + tr_eta**2)
+                    np.sqrt(tr_phi ** 2 + tr_eta ** 2)
                     for tr_phi, tr_eta in zip(
                         row["Jet_Track_DeltaPhi"], row["Jet_Track_DeltaEta"]
                     )

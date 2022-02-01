@@ -326,7 +326,6 @@ def save_plot(
         if do_close_exp:
             comet_exp.end()
 
-
 def save_root(root_obj, fpath, save_png=True, logy=False, draw_option=None):
     if fpath.split(".")[-1] in ["root", "png", "svg", "pickle"]:
         fpath = ".".join(fpath.split(".")[:-1])
