@@ -170,3 +170,188 @@ def apply_cut(df, cut, sortby, order):
             ],
             axis=1,
         )
+
+
+def extract_features(
+    df,
+    features_tracks,
+    features_sv,
+    n_tracks=10,
+    n_sv=3,
+    sortby_tracks="IPdNsigmaAbs",
+    sortby_sv="LxyNsigma",
+    sorting_mode_tracks="desc",
+    sorting_mode_sv="desc",
+):
+    """extracts features from non-flattened ROOT tree to flat table
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe from `uproot::tree.pandas.df(flatten=False)`
+    features_tracks/sv : list of strings
+        per-track and per-SV features to be extracted
+        each one is passed to `add_sorted_col`
+        if they are not computed/not present in df - warning is printed but no error raised
+    n_tracks/sv : int
+        number of tracks/SV to be stored,
+        if real number of tracks or SV in jet is smaller then that, it will be filled with NaN
+    sortby_tracks/sv : str
+        "Jet_SV__{sortby_sv}" is passed to `add_sorting_index()`
+    sorting_mode_tracks : str
+        'desc' or 'asc'
+        passed to `add_sorting_index()`
+
+    Returns
+    -------
+    df : pd.DataFrame
+        dataframe in flat table format
+    """
+
+    #     def IPdNSigmaAbs_cutSmallSigma(row):
+    #         pt = row['Jet_Track_Pt']
+    #         IPd_sigma = np.sqrt(row['Jet_Track_CovIPd'])
+    #         sigma_threshold = 0.004444561*pt**(-0.4790711) if pt < 10 else 0.0016
+    #         if IPd_sigma > sigma_threshold:
+    #             return abs(row['Jet_Track_IPd'] / IPd_sigma)
+    #         else:
+    #             return -1
+
+    def subtract_phi(phi1, phi2):
+        diff = phi1 - phi2
+        if abs(diff) <= np.pi:
+            return diff
+        elif diff > np.pi:
+            return diff - 2 * np.pi
+        elif diff < -np.pi:
+            return diff + 2 * np.pi
+
+    def subtract_eta(eta1, eta2):
+        diff = eta1 - eta2
+        return diff
+
+    ### FILTERING
+    #     df = df.query('Jet_Pt > 10 and Jet_Pt < 150')
+
+    # add custom features,  df.apply is slow: execute only if needed
+    if "Jet_Track_DeltaPhi" in features_tracks or "Jet_Track_DeltaR" in features_tracks:
+        df["Jet_Track_DeltaPhi"] = df.apply(
+            lambda row: np.array(
+                [
+                    subtract_phi(tr_phi, row["Jet_Phi"])
+                    for tr_phi in row["Jet_Track_Phi"]
+                ]
+            ),
+            axis=1,
+        )
+    if "Jet_Track_DeltaEta" in features_tracks or "Jet_Track_DeltaR" in features_tracks:
+        df["Jet_Track_DeltaEta"] = df.apply(
+            lambda row: np.array(
+                [
+                    subtract_eta(tr_eta, row["Jet_Eta"])
+                    for tr_eta in row["Jet_Track_Eta"]
+                ]
+            ),
+            axis=1,
+        )
+    if "Jet_Track_DeltaR" in features_tracks:
+        df["Jet_Track_DeltaR"] = df.apply(
+            lambda row: np.array(
+                [
+                    np.sqrt(tr_phi**2 + tr_eta**2)
+                    for tr_phi, tr_eta in zip(
+                        row["Jet_Track_DeltaPhi"], row["Jet_Track_DeltaEta"]
+                    )
+                ]
+            ),
+            axis=1,
+        )
+    if "Jet_Track_PtFrac" in features_tracks:
+        df["Jet_Track_PtFrac"] = df.apply(
+            lambda row: np.array(
+                [(tr_pt / row["Jet_Pt"]) for tr_pt in row["Jet_Track_Pt"]]
+            ),
+            axis=1,
+        )
+    #     df['Jet_Track_IPdNsigmaAbs']  = df.apply(lambda row: abs(row['Jet_Track_IPd'] / np.sqrt(row['Jet_Track_CovIPd'])), axis=1)
+    #     df['Jet_Track_IPdNsigmaAbs']  = df.apply(lambda row: IPdNsigmaAbs_cutSmallSigma(row), axis=1)
+    df["Jet_Track_IPdSigma"] = df["Jet_Track_CovIPd"].pow(0.5)
+    df["Jet_Track_IPzSigma"] = df["Jet_Track_CovIPz"].pow(0.5)
+    #     df = df.drop(['Jet_Track_CovIPd', 'Jet_Track_CovIPz'], axis=1) #
+
+    df["Jet_Track_IPdAbs"] = eval("abs(a)", dict(a=df["Jet_Track_IPd"]))
+    df["Jet_Track_IPzAbs"] = eval("abs(a)", dict(a=df["Jet_Track_IPz"]))
+    df["Jet_Track_IPdNsigma"] = eval(
+        "a/b", dict(a=df["Jet_Track_IPd"], b=df["Jet_Track_IPdSigma"])
+    )
+    df["Jet_Track_IPzNsigma"] = eval(
+        "a/b", dict(a=df["Jet_Track_IPz"], b=df["Jet_Track_IPzSigma"])
+    )
+    df["Jet_Track_IPdNsigmaAbs"] = eval(
+        "abs(a)/b", dict(a=df["Jet_Track_IPd"], b=df["Jet_Track_IPdSigma"])
+    )
+    df["Jet_Track_IPzNsigmaAbs"] = eval(
+        "abs(a)/b", dict(a=df["Jet_Track_IPz"], b=df["Jet_Track_IPzSigma"])
+    )
+
+    #     def cut_val(track_pt):
+    #         return 0.004444561*track_pt**(-0.4790711) if track_pt < 10 else 0.0015
+
+    #     df['Jet_Track_CutIPdSigmaVSPt'] = df.apply(lambda row:
+    #                                         np.array([int(ipd_sigma < cut_val(pt))  for ipd_sigma, pt in zip(row['Jet_Track_IPdSigma'], row['Jet_Track_Pt'])]),
+    #                                         axis=1
+    #                                       )
+    df["Jet_SecVtx_LxyNsigma"] = eval(
+        "a / b", dict(a=df["Jet_SecVtx_Lxy"], b=df["Jet_SecVtx_SigmaLxy"])
+    )
+
+    ### create index cols
+    add_sorting_index(df, f"Jet_Track_{sortby_tracks}", sorting_mode_tracks)
+    add_sorting_index(df, f"Jet_SecVtx_{sortby_sv}", sorting_mode_sv)
+
+    ### apply cuts a.k.a. filter index cols
+    #     apply_cut(df, 'Jet_Track_IPdNsigmaAbs < 50', track_sorting_var, 'desc')
+    #     apply_cut(df, 'Jet_Track_Pt > 0.5', track_sorting_var, 'desc')
+    #     apply_cut(df, 'Jet_Track_CutIPdSigmaVSPt < 0.5', track_sorting_var, 'desc')
+    #     apply_cut(df, 'Jet_SecVtx_Chi2 < 10' ,'LxyNsigma', 'desc')
+    #     apply_cut(df, 'Jet_SecVtx_Dispersion < 0.01' ,'LxyNsigma', 'desc')
+    #     apply_cut(df, 'Jet_SecVtx_SigmaLxy < 0.1' ,'LxyNsigma', 'desc')
+
+    for feat in list(features_tracks) + list(features_sv):
+        if feat not in df.columns:
+            print(
+                f"add_features(): Warning: {feat} not found in DataFrame, probably it was not read from ROOT file or not created during adding features"
+            )
+
+    features_tracks = [feat for feat in features_tracks if feat in df.columns]
+    features_sv = [feat for feat in features_sv if feat in df.columns]
+
+    for feat in features_tracks:
+        add_sorted_col(df, feat, sortby_tracks, sorting_mode_tracks)
+
+    for feat in features_sv:
+        add_sorted_col(df, feat, sortby_sv, sorting_mode_sv)
+
+    ### extract n-th value from sorted cols
+    for feat in features_tracks:
+        for i in range(n_tracks):
+            add_nth_val(
+                df, col_name=f"{feat}__sortby__{sortby_tracks}__desc", n=i, fillna=None
+            )
+
+    for feat in features_sv:
+        for i in range(n_sv):
+            add_nth_val(
+                df, col_name=f"{feat}__sortby__{sortby_sv}__desc", n=i, fillna=None
+            )
+
+    ### drop temporary columns, i.e. those containing arrays, like 'Index__*' as well as initial columns used for extraction, like 'Jet_Track_Pt'
+    if len(df) == 0:
+        return pd.DataFrame()
+
+    columns_to_keep = [
+        col
+        for col, val in zip(df.columns, df.iloc[0])
+        if not hasattr(val, "__iter__") or isinstance(val, str)
+    ]
+    return df[columns_to_keep]
