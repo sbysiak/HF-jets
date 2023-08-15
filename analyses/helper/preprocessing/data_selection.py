@@ -1,10 +1,10 @@
-import uproot
+import uproot3
 import pandas as pd
 
 
 def create_index(fname, tree_name):
     """creates pd.MultiIndex consisting of path to ROOT file, tree name and entry (without any filtering)"""
-    froot = uproot.open(fname)
+    froot = uproot3.open(fname)
     jet_id = (
         froot[tree_name].pandas.df(flatten=False, branches=[]).index
     )  # branches=[] reads no branches, branches=None reads all

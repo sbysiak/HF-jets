@@ -301,13 +301,14 @@ def extract_features(
     #                                         np.array([int(ipd_sigma < cut_val(pt))  for ipd_sigma, pt in zip(row['Jet_Track_IPdSigma'], row['Jet_Track_Pt'])]),
     #                                         axis=1
     #                                       )
-    df["Jet_SecVtx_LxyNsigma"] = eval(
-        "a / b", dict(a=df["Jet_SecVtx_Lxy"], b=df["Jet_SecVtx_SigmaLxy"])
-    )
+    if "Jet_SecVtx_LxyNsigma" in features_sv:
+        df["Jet_SecVtx_LxyNsigma"] = eval(
+            "a / b", dict(a=df["Jet_SecVtx_Lxy"], b=df["Jet_SecVtx_SigmaLxy"])
+        )
 
     ### create index cols
-    add_sorting_index(df, f"Jet_Track_{sortby_tracks}", sorting_mode_tracks)
-    add_sorting_index(df, f"Jet_SecVtx_{sortby_sv}", sorting_mode_sv)
+    if n_tracks: add_sorting_index(df, f"Jet_Track_{sortby_tracks}", sorting_mode_tracks)
+    if n_sv: add_sorting_index(df, f"Jet_SecVtx_{sortby_sv}", sorting_mode_sv)
 
     ### apply cuts a.k.a. filter index cols
     #     apply_cut(df, 'Jet_Track_IPdNsigmaAbs < 50', track_sorting_var, 'desc')

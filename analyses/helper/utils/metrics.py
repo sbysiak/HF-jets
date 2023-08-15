@@ -147,7 +147,7 @@ def recursive_threshold_search(
     ts : float
         score threshold value
     vals : float
-        value of optimized metric
+        exact value of optimized metric
     """
     ts_next = np.linspace(0, 1, 11)
     prev_min = -1
