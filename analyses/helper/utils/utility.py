@@ -36,7 +36,7 @@ def infer_tree_name(fname, flavour):
     candidates = [
         k
         for k in [k.decode("utf-8") for k in froot.allkeys()]
-        if f"{flavour}Jets" in k and k.startswith("JetTree")
+        if (f"{flavour}Jets" in k or f'Jets_{flavour}' in k) and k.startswith("JetTree")
     ]
     if len(candidates) > 1:
         raise ValueError(
@@ -187,7 +187,7 @@ def get_pythia_weight(fpath, flavour="udsg"):
         hist_dir_name = [
             obj.decode("utf-8")
             for obj in froot["ChargedJetsHadronCF"].allkeys()
-            if f"{flavour}Jets_histos" in obj.decode("utf-8")
+            if f"{flavour}Jets_histos" in obj.decode("utf-8") or f"Jets_{flavour}_histos" in obj.decode("utf-8")
         ][0]
         hist_dir = froot["ChargedJetsHadronCF"][hist_dir_name]
         hist = [h for h in hist_dir if hist_name in str(h.name)][0]
@@ -258,6 +258,8 @@ def save_plot(
     store_png=True,
     store_svg=True,
     store_pickle=True,
+    ax=None,
+    savefig_kws=dict(dpi=200),
 ):
     """saves plot in multiple formats/places: in comet_ml, png, svg, pickle
 
@@ -287,6 +289,10 @@ def save_plot(
         file name in comet_ml, if not provided it is file name extracted from `fpath`
     store_png/svg/pickle : bool
         if given format should be stored
+    ax : axes.Axes or None
+        if not provided then current axes (plt.gca()) is saved
+    savefig_kws : dict
+        kwargs passed to plt.savefig()
 
     Returns
     -------
@@ -303,12 +309,18 @@ def save_plot(
             )
 
     pathlib.Path(fpath).parents[0].mkdir(parents=True, exist_ok=True)
+
+    if ax:
+        plt.sca(ax)
     plt.tight_layout()
+    plt.gcf().patch.set_facecolor('white')
+
+
     if store_png:
-        plt.savefig(fpath + ".png")
+        plt.savefig(fpath + ".png", **savefig_kws)
         check_min_size(fpath + ".png", 3)
     if store_svg:
-        plt.savefig(fpath + ".svgz", format="svgz")
+        plt.savefig(fpath + ".svgz", format="svgz", **savefig_kws)
         check_min_size(fpath + ".svgz", 3)
     if store_pickle:
         with lzma.open(fpath + ".pickle.xz", "wb") as f:
@@ -326,15 +338,16 @@ def save_plot(
         if do_close_exp:
             comet_exp.end()
 
-def save_root(root_obj, fpath, save_png=True, logy=False, draw_option=None):
+def save_root(root_obj, fpath, save_png=True, save_eps=False, logy=False, draw_option=None):
     if fpath.split(".")[-1] in ["root", "png", "svg", "pickle"]:
         fpath = ".".join(fpath.split(".")[:-1])
     pathlib.Path(fpath).parents[0].mkdir(parents=True, exist_ok=True)
 
     if isinstance(root_obj, ROOT.TCanvas):
         root_obj.SaveAs(fpath + ".root")
-        if save_png:
-            root_obj.SaveAs(fpath + ".png")
+        if save_png or save_eps:
+            if save_png: root_obj.SaveAs(fpath + ".png")
+            if save_eps: root_obj.SaveAs(fpath + ".eps")
             if logy:
                 root_obj.cd(1)
                 primitives = ROOT.gPad.GetListOfPrimitives()
@@ -343,17 +356,20 @@ def save_root(root_obj, fpath, save_png=True, logy=False, draw_option=None):
                     if hasattr(p, "GetMinimum") and p.GetMinimum() <= 0:
                         p.SetMinimum(1e-2)
                 ROOT.gPad.SetLogy()
-                root_obj.SaveAs(fpath + "_logy.png")
+                if save_png: root_obj.SaveAs(fpath + "_logy.png")
+                if save_eps: root_obj.SaveAs(fpath + "_logy.eps")
     else:
         root_obj.SaveAs(fpath + ".root")
 
-        if save_png:
+        if save_png or save_eps:
             c = ROOT.TCanvas()
             if draw_option is None:
                 draw_option = "colz" if isinstance(root_obj, ROOT.TCanvas) else "e"
             root_obj.Draw(draw_option)
             c.Draw()
-            c.SaveAs(fpath + ".png")
+            if save_png: c.SaveAs(fpath + ".png")
+            if save_eps: c.SaveAs(fpath + ".eps")
             if logy:
                 c.SetLogy()
-                c.SaveAs(fpath + "_logy.png")
+                if save_png: c.SaveAs(fpath + "_logy.png")
+                if save_eps: c.SaveAs(fpath + "_logy.eps")
